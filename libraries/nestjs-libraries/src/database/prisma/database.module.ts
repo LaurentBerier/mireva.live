@@ -1,4 +1,30 @@
 import { Global, Module } from '@nestjs/common';
+import { WorkspaceRepository } from './agency/workspace.repository';
+import { WorkspaceService } from './agency/workspace.service';
+import { SupabaseIdentityService } from './agency/supabase.identity.service';
+import { ReviewRepository } from './agency/review.repository';
+import { ReviewService } from './agency/review.service';
+import { AgencyImportService } from './agency/import.service';
+import { AgencyImportRepository } from './agency/import.repository';
+import { AgencyOperationsRepository } from './agency/operations.repository';
+import { AgencyOperationsService } from './agency/operations.service';
+import { AgencyDeliveryRepository } from './agency/delivery.repository';
+import { AgencyDeliveryService } from './agency/delivery.service';
+import { AgencyMediaRepository } from './agency/media.repository';
+import { AgencyMediaService } from './agency/media.service';
+import { AgencyAnalyticsRepository } from './agency/analytics.repository';
+import { AgencyAnalyticsService } from './agency/analytics.service';
+import { CompetitorManager } from '@gitroom/nestjs-libraries/integrations/competitors/competitor.manager';
+import { AgencyReportRepository } from './agency/report.repository';
+import { AgencyReportService } from './agency/report.service';
+import { AgencyGrowthRepository } from './agency/growth.repository';
+import { AgencyGrowthService } from './agency/growth.service';
+import { AgencyInboxRepository } from './agency/inbox.repository';
+import { AgencyInboxService } from './agency/inbox.service';
+import { EngagementManager } from '@gitroom/nestjs-libraries/integrations/engagement/engagement.manager';
+import { AdvertisingManager } from '@gitroom/nestjs-libraries/integrations/advertising/advertising.manager';
+import { AgencyAdvertisingRepository } from './agency/advertising.repository';
+import { AgencyAdvertisingService } from './agency/advertising.service';
 import { PrismaRepository, PrismaService, PrismaTransaction } from './prisma.service';
 import { OrganizationRepository } from '@gitroom/nestjs-libraries/database/prisma/organizations/organization.repository';
 import { OrganizationService } from '@gitroom/nestjs-libraries/database/prisma/organizations/organization.service';
@@ -60,6 +86,32 @@ import { AdminStatsService } from '@gitroom/nestjs-libraries/database/prisma/adm
   imports: [],
   controllers: [],
   providers: [
+    WorkspaceRepository,
+    WorkspaceService,
+    SupabaseIdentityService,
+    ReviewRepository,
+    ReviewService,
+    AgencyImportRepository,
+    AgencyImportService,
+    AgencyOperationsRepository,
+    AgencyOperationsService,
+    AgencyDeliveryRepository,
+    AgencyDeliveryService,
+    AgencyMediaRepository,
+    AgencyMediaService,
+    AgencyAnalyticsRepository,
+    AgencyAnalyticsService,
+    CompetitorManager,
+    AgencyReportRepository,
+    AgencyReportService,
+    AgencyGrowthRepository,
+    AgencyGrowthService,
+    AgencyInboxRepository,
+    AgencyInboxService,
+    EngagementManager,
+    AdvertisingManager,
+    AgencyAdvertisingRepository,
+    AgencyAdvertisingService,
     PrismaService,
     PrismaRepository,
     PrismaTransaction,

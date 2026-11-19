@@ -8,10 +8,12 @@ import { getCookieUrlFromDomain } from '@gitroom/helpers/subdomain/subdomain.man
 import { HttpForbiddenException } from '@gitroom/nestjs-libraries/services/exception.filter';
 import { MastraService } from '@gitroom/nestjs-libraries/chat/mastra.service';
 import { setSentryUserContext } from '@gitroom/nestjs-libraries/sentry/initialize.sentry';
+import { SupabaseIdentityService } from '@gitroom/nestjs-libraries/database/prisma/agency/supabase.identity.service';
 
 export const removeAuth = (res: Response) => {
   res.cookie('auth', '', {
-    domain: getCookieUrlFromDomain(process.env.FRONTEND_URL!),
+    path: '/',
+    ...(process.env.AUTH_PROVIDER !== 'supabase' ? { domain: getCookieUrlFromDomain(process.env.FRONTEND_URL!) } : {}),
     ...(!process.env.NOT_SECURED
       ? {
           secure: true,
@@ -29,10 +31,13 @@ export const removeAuth = (res: Response) => {
 export class AuthMiddleware implements NestMiddleware {
   constructor(
     private _organizationService: OrganizationService,
-    private _userService: UsersService
+    private _userService: UsersService,
+    private readonly supabase: SupabaseIdentityService
   ) {}
   async use(req: Request, res: Response, next: NextFunction) {
-    const auth = req.headers.auth || req.cookies.auth;
+    const bearer = req.headers.authorization?.startsWith('Bearer ')
+      ? req.headers.authorization.slice(7) : undefined;
+    const auth = bearer || req.headers.auth || req.cookies.auth;
     if (!auth) {
       throw new HttpForbiddenException();
     }
@@ -40,7 +45,9 @@ export class AuthMiddleware implements NestMiddleware {
       // Verify the JWT signature only. Never trust authorization-relevant
       // claims (id, isSuperAdmin, activated) from the token body — always
       // re-resolve the user from the database using the id.
-      const payload = AuthService.verifyJWT(auth) as User | null;
+      const payload = process.env.AUTH_PROVIDER === 'supabase'
+        ? { id: await this.supabase.verify(String(auth)) }
+        : AuthService.verifyJWT(auth) as User | null;
       const orgHeader = req.cookies.showorg || req.headers.showorg;
 
       if (!payload?.id || typeof payload.id !== 'string') {
@@ -58,7 +65,7 @@ export class AuthMiddleware implements NestMiddleware {
       }
 
       const impersonate = req.cookies.impersonate || req.headers.impersonate;
-      if (user?.isSuperAdmin && impersonate) {
+      if (process.env.AUTH_PROVIDER !== 'supabase' && user?.isSuperAdmin && impersonate) {
         const loadImpersonate = await this._organizationService.getUserOrg(
           impersonate
         );
@@ -96,12 +103,20 @@ export class AuthMiddleware implements NestMiddleware {
       const organization = (
         await this._organizationService.getOrgsByUserId(user.id)
       ).filter((f) => !f.users[0].disabled);
-      const setOrg =
-        organization.find((org) => org.id === orgHeader) ||
+      const setOrg = orgHeader
+        ? organization.find((org) => org.id === orgHeader)
+        :
         organization.find((org) => org.subscription) ||
         organization[0];
 
-      if (!organization) {
+      if (!setOrg) {
+        throw new HttpForbiddenException();
+      }
+
+      const path = req.originalUrl.split('?')[0];
+      if (setOrg.users[0].role === 'REVIEWER' &&
+        path !== '/user/self' && !path.startsWith('/agency/') &&
+        !(req.method === 'GET' && path.startsWith('/media/private/'))) {
         throw new HttpForbiddenException();
       }
 

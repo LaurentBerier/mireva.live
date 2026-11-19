@@ -5,6 +5,15 @@ dist
 tmp
 /out-tsc
 .env
+.env.*
+!.env.*.example
+**/.env.local
+.vercel/
+.tools/
+reports/agency-*.log
+reports/agency-qa/
+reports/agency-dependency-audit.json
+deploy/corresponding-source.tar.gz
 .apple
 # dependencies
 node_modules

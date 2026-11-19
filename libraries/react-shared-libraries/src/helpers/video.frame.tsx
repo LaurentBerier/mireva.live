@@ -1,6 +1,7 @@
 'use client';
 
 import { FC } from 'react';
+import { browserMediaUrl } from './browser.media.url';
 export const VideoFrame: FC<{
   url: string;
   autoplay?: boolean;
@@ -9,7 +10,7 @@ export const VideoFrame: FC<{
   return (
     <video
       className="w-full h-full object-cover rounded-[4px]"
-      src={url + '#t=0.1'}
+      src={browserMediaUrl(url) + '#t=0.1'}
       preload="metadata"
       autoPlay={!!props?.autoplay}
     />

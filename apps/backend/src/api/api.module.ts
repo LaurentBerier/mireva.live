@@ -1,4 +1,14 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { AgencyController } from './routes/agency.controller';
+import { AgencyImportController } from './routes/agency.import.controller';
+import { AgencyAnalyticsController } from './routes/agency.analytics.controller';
+import { AgencyReportsController } from './routes/agency.reports.controller';
+import { AgencyGrowthController } from './routes/agency.growth.controller';
+import { AgencyPublicController } from './routes/agency.public.controller';
+import { AgencyInboxController } from './routes/agency.inbox.controller';
+import { AgencyHooksController } from './routes/agency.hooks.controller';
+import { AgencyAdvertisingController } from './routes/agency.advertising.controller';
+import { Request, Response, NextFunction } from 'express';
 import { AuthController } from '@gitroom/backend/api/routes/auth.controller';
 import { AuthService } from '@gitroom/backend/services/auth/auth.service';
 import { UsersController } from '@gitroom/backend/api/routes/users.controller';
@@ -58,6 +68,13 @@ import { OauthProvider } from '@gitroom/backend/services/auth/providers/oauth.pr
 import { StripeController } from '@gitroom/backend/api/routes/stripe.controller';
 
 const authenticatedController = [
+  AgencyImportController,
+  AgencyController,
+  AgencyAnalyticsController,
+  AgencyReportsController,
+  AgencyGrowthController,
+  AgencyInboxController,
+  AgencyAdvertisingController,
   UsersController,
   AnalyticsController,
   IntegrationsController,
@@ -91,6 +108,8 @@ const authenticatedController = [
     : [
         RootController,
         PaymentController,
+        AgencyPublicController,
+        AgencyHooksController,
         StripeController,
         AuthController,
         PublicController,
@@ -132,6 +151,13 @@ const authenticatedController = [
 })
 export class ApiModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    consumer.apply((req: Request, res: Response, next: NextFunction) => {
+      if (process.env.AUTH_PROVIDER === 'supabase') {
+        res.status(404).json({ message: 'Use Supabase authentication' });
+        return;
+      }
+      next();
+    }).forRoutes(AuthController);
     consumer.apply(AuthMiddleware).forRoutes(...authenticatedController);
     consumer.apply(UploadWidgetAuthMiddleware).forRoutes(MediaWidgetController);
     consumer

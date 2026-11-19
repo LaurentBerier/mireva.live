@@ -96,7 +96,7 @@ export const startMcp = async (app: INestApplication) => {
     ) as T;
   const claudeTools = withoutClaudeHidden(tools);
 
-  const backendUrl = process.env.NEXT_PUBLIC_OVERRIDE_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+  const backendUrl = process.env.PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_OVERRIDE_BACKEND_URL || new URL(process.env.NEXT_PUBLIC_BACKEND_URL || '/api/backend', process.env.FRONTEND_URL!).toString();
   // this runs before the backend listens: a bucket url that doesn't parse only
   // costs the widget its thumbnails, never the boot
   let storageOrigin: string | undefined;
@@ -204,19 +204,19 @@ export const startMcp = async (app: INestApplication) => {
   // grant, so the root is answered only when that client is configured
   const authorizationServers: Record<string, { issuer: string; registration: boolean; refresh: boolean }> = {
     '/mcp-oauth-chatgpt': {
-      issuer: new URL('/mcp-oauth-chatgpt', process.env.NEXT_PUBLIC_BACKEND_URL!).toString(),
+      issuer: new URL('/mcp-oauth-chatgpt', backendUrl!).toString(),
       registration: false,
       refresh: false,
     },
     '/mcp-oauth-dynamic': {
-      issuer: new URL('/mcp-oauth-dynamic', process.env.NEXT_PUBLIC_BACKEND_URL!).toString(),
+      issuer: new URL('/mcp-oauth-dynamic', backendUrl!).toString(),
       registration: true,
       refresh: false,
     },
     ...(hubspotOAuthClientId
       ? {
           '/': {
-            issuer: new URL(process.env.NEXT_PUBLIC_BACKEND_URL!).origin,
+            issuer: new URL(backendUrl!).origin,
             registration: false,
             refresh: true,
           },
@@ -251,7 +251,7 @@ export const startMcp = async (app: INestApplication) => {
   const createResourceMiddleware = (mcpPath: string, authorizationServer: string) =>
     createOAuthMiddleware({
       oauth: {
-        resource: new URL(mcpPath, process.env.NEXT_PUBLIC_BACKEND_URL!).toString(),
+        resource: new URL(mcpPath, backendUrl!).toString(),
         authorizationServers: [authorizationServers[authorizationServer].issuer],
         scopesSupported: oauthScopes,
         validateToken: async (token: string) => {
@@ -318,7 +318,7 @@ export const startMcp = async (app: INestApplication) => {
       return;
     }
 
-    const url = new URL('/.well-known/oauth-protected-resource', process.env.NEXT_PUBLIC_BACKEND_URL);
+    const url = new URL('/.well-known/oauth-protected-resource', backendUrl);
     await resource.middleware(req, res, url);
   });
 
@@ -376,7 +376,7 @@ export const startMcp = async (app: INestApplication) => {
 
     // baseUrl is the mount path that matched, e.g. /mcp-oauth-claude
     const { middleware, mcpServer, selfHostedServer } = oauthResources[req.baseUrl];
-    const url = new URL(req.baseUrl, process.env.NEXT_PUBLIC_BACKEND_URL);
+    const url = new URL(req.baseUrl, backendUrl);
 
     const result = await middleware(req, res, url);
     if (!result.proceed) return;
@@ -438,7 +438,7 @@ export const startMcp = async (app: INestApplication) => {
       return;
     }
 
-    const url = new URL('/mcp', process.env.NEXT_PUBLIC_BACKEND_URL);
+    const url = new URL('/mcp', backendUrl);
 
     endListenStream(req, res);
     fixAcceptHeader(req);
@@ -478,7 +478,7 @@ export const startMcp = async (app: INestApplication) => {
 
     const url = new URL(
       `/mcp/${req.params.id}`,
-      process.env.NEXT_PUBLIC_BACKEND_URL
+      backendUrl
     );
 
     endListenStream(req, res);
@@ -520,7 +520,7 @@ export const startMcp = async (app: INestApplication) => {
       return;
     }
 
-    const url = new URL(req.originalUrl, process.env.NEXT_PUBLIC_BACKEND_URL);
+    const url = new URL(req.originalUrl, backendUrl);
 
     await runWithContext(
       // @ts-ignore

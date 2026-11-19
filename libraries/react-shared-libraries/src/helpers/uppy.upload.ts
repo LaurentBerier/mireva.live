@@ -135,6 +135,8 @@ export const getUppyUploadPlugin = (
   transloadit: string[] = []
 ) => {
   switch (provider) {
+    case 'supabase':
+      return { plugin: SupabaseUppy, options: { fetch } };
     case 'transloadit':
       return {
         plugin: Transloadit,
@@ -215,3 +217,4 @@ export const getUppyUploadPlugin = (
       throw new Error(`Unsupported storage provider: ${provider}`);
   }
 };
+import { SupabaseUppy } from './supabase.uppy';

@@ -193,7 +193,7 @@ export function useUppyUploader(props: {
     uppy2.use(plugin, options);
     // installed whenever the record can come back "processing", so the backend
     // decides; it passes files through untouched when the row is already ready
-    if (storageProvider === 'cloudflare' && !useTransloadit) {
+    if (['cloudflare', 'supabase'].includes(storageProvider) && !useTransloadit) {
       uppy2.use(WaitForMediaProcessing, {
         fetch,
         processingMessage: t('processing', 'Processing...'),

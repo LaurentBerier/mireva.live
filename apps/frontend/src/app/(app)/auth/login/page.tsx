@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { Login } from '@gitroom/frontend/components/auth/login';
+import { SupabaseLogin } from '@gitroom/frontend/components/auth/supabase.login';
 import { Metadata } from 'next';
 import { isGeneralServerSide } from '@gitroom/helpers/utils/is.general.server.side';
 export const metadata: Metadata = {
@@ -7,5 +8,6 @@ export const metadata: Metadata = {
   description: '',
 };
 export default async function Auth() {
+  if (process.env.AUTH_PROVIDER === 'supabase') return <SupabaseLogin />;
   return <Login />;
 }

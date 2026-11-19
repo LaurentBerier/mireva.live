@@ -28,7 +28,9 @@ export class ConfigurationChecker {
     this.checkNonEmpty('JWT_SECRET');
     this.checkIsValidUrl('MAIN_URL');
     this.checkIsValidUrl('FRONTEND_URL');
-    this.checkIsValidUrl('NEXT_PUBLIC_BACKEND_URL');
+    if (this.get('AUTH_PROVIDER') !== 'supabase' || !this.get('NEXT_PUBLIC_BACKEND_URL')?.startsWith('/')) {
+      this.checkIsValidUrl('NEXT_PUBLIC_BACKEND_URL');
+    }
     this.checkIsValidUrl('BACKEND_INTERNAL_URL');
     this.checkNonEmpty('STORAGE_PROVIDER', 'Needed to setup storage.');
   }

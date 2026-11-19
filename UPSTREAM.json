@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/gitroomhq/postiz-app",
+  "commit": "2f24e10f2204295f66a1999679e9896db3cb2094",
+  "license": "AGPL-3.0",
+  "node": "22.23.4",
+  "packageManager": "pnpm@10.6.1",
+  "supabaseCli": "3.2.0",
+  "forkPurpose": "Agency management with Supabase Auth/Postgres/private storage, Vercel frontend, and supporting Postiz services"
+}

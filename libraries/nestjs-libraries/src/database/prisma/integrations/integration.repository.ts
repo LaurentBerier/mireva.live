@@ -1,4 +1,5 @@
 import { PrismaRepository } from '@gitroom/nestjs-libraries/database/prisma/prisma.service';
+import { ReviewRepository } from '../agency/review.repository';
 import { Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
 import dayjs from 'dayjs';
@@ -23,7 +24,8 @@ export class IntegrationRepository {
     private _exisingPlugData: PrismaRepository<'exisingPlugData'>,
     private _customers: PrismaRepository<'customer'>,
     private _mentions: PrismaRepository<'mentions'>,
-    private _encryptionService: EncryptionService
+    private _encryptionService: EncryptionService,
+    private readonly reviews: ReviewRepository
   ) {}
 
   private async decryptTokens<T extends Partial<Integration>>(
@@ -188,6 +190,7 @@ export class IntegrationRepository {
   }
 
   async updateIntegration(id: string, params: Partial<Integration>) {
+    return this.reviews.edit(params.organizationId!, undefined, async tx => {
     if (
       params.picture &&
       (params.picture.indexOf(process.env.CLOUDFLARE_BUCKET_URL!) === -1 ||
@@ -196,7 +199,7 @@ export class IntegrationRepository {
       params.picture = await this.storage.uploadSimple(params.picture);
     }
 
-    const existing = await this._integration.model.integration.findUnique({
+    const existing = await tx.integration.findUnique({
       where: {
         organizationId_internalId: {
           organizationId: params.organizationId!,
@@ -209,7 +212,7 @@ export class IntegrationRepository {
     // must also take that login's identity and refresh token, otherwise the
     // next refresh runs as the old identity and cannot find the page.
     const fresh = existing
-      ? await this._integration.model.integration.findUnique({
+      ? await tx.integration.findUnique({
           where: { id },
           select: {
             rootInternalId: true,
@@ -220,7 +223,7 @@ export class IntegrationRepository {
       : null;
 
     if (existing) {
-      await this._posts.model.post.updateMany({
+      await tx.post.updateMany({
         where: {
           integrationId: id,
         },
@@ -229,7 +232,7 @@ export class IntegrationRepository {
         },
       });
 
-      await this._integration.model.integration.update({
+      await tx.integration.update({
         where: {
           id,
         },
@@ -240,7 +243,7 @@ export class IntegrationRepository {
       });
     }
 
-    return this._integration.model.integration.update({
+    return tx.integration.update({
       select: {
         id: true,
       },
@@ -264,6 +267,7 @@ export class IntegrationRepository {
         deletedAt: null,
         refreshNeeded: false,
       },
+    });
     });
   }
 
@@ -306,11 +310,12 @@ export class IntegrationRepository {
     providerIdentifier: string,
     rootInternalId: string
   ) {
+    return this.reviews.edit(org, undefined, async tx => {
     // A soft-deleted channel can still hold the target internalId
     // (deleteChannel keeps it): rename it out of the way like updateIntegration
     // does, otherwise the organizationId_internalId unique constraint rejects
     // the migration. Live channels are rejected by the service before this.
-    const existing = await this._integration.model.integration.findUnique({
+    const existing = await tx.integration.findUnique({
       where: {
         organizationId_internalId: {
           organizationId: org,
@@ -320,7 +325,7 @@ export class IntegrationRepository {
     });
 
     if (existing && existing.deletedAt) {
-      await this._integration.model.integration.update({
+      await tx.integration.update({
         where: {
           id: existing.id,
         },
@@ -330,7 +335,7 @@ export class IntegrationRepository {
       });
     }
 
-    return this._integration.model.integration.update({
+    return tx.integration.update({
       select: {
         id: true,
       },
@@ -343,6 +348,7 @@ export class IntegrationRepository {
         providerIdentifier,
         rootInternalId,
       },
+    });
     });
   }
 
@@ -383,7 +389,8 @@ export class IntegrationRepository {
           ]),
         }
       : {};
-    const upsert = await this._integration.model.integration.upsert({
+    const operation = async (client: Pick<Prisma.TransactionClient, 'integration'>) => {
+    const upsert = await client.integration.upsert({
       where: {
         organizationId_internalId: {
           internalId,
@@ -442,7 +449,7 @@ export class IntegrationRepository {
     if (oneTimeToken) {
       const rootId =
         (
-          await this._integration.model.integration.findFirst({
+          await client.integration.findFirst({
             where: {
               organizationId: org,
               internalId: internalId,
@@ -450,12 +457,14 @@ export class IntegrationRepository {
           })
         )?.rootInternalId || internalId;
 
-      await this._integration.model.integration.updateMany({
+      await client.integration.updateMany({
         where: {
           id: {
             not: upsert.id,
           },
           rootInternalId: rootId,
+          organizationId: org,
+          providerIdentifier: provider,
         },
         data: {
           token,
@@ -469,6 +478,12 @@ export class IntegrationRepository {
     }
 
     return this.decryptTokens(upsert);
+    };
+    const previous = await this._integration.model.integration.findUnique({ where: { organizationId_internalId: { organizationId: org, internalId } }, select: { providerIdentifier: true, deletedAt: true, customInstanceDetails: true, additionalSettings: true } });
+    return previous && (previous.providerIdentifier !== provider || previous.deletedAt ||
+      (customInstanceDetails !== undefined && previous.customInstanceDetails !== customInstanceDetails) ||
+      (additionalSettings !== undefined && previous.additionalSettings !== JSON.stringify(additionalSettings)))
+      ? this.reviews.edit(org, undefined, operation) : operation(this._integration.model);
   }
 
   async needsToBeRefreshed() {
@@ -836,7 +851,8 @@ export class IntegrationRepository {
   }
 
   async disableChannel(org: string, id: string) {
-    await this._integration.model.integration.update({
+    return this.reviews.edit(org, undefined, async tx => {
+    await tx.integration.update({
       where: {
         id,
         organizationId: org,
@@ -845,10 +861,12 @@ export class IntegrationRepository {
         disabled: true,
       },
     });
+    });
   }
 
   async enableChannel(org: string, id: string) {
-    await this._integration.model.integration.update({
+    return this.reviews.edit(org, undefined, async tx => {
+    await tx.integration.update({
       where: {
         id,
         organizationId: org,
@@ -856,6 +874,7 @@ export class IntegrationRepository {
       data: {
         disabled: false,
       },
+    });
     });
   }
 
@@ -871,7 +890,8 @@ export class IntegrationRepository {
   }
 
   deleteChannel(org: string, id: string) {
-    return this._integration.model.integration.update({
+    return this.reviews.edit(org, undefined, async tx => {
+    return tx.integration.update({
       select: {
         id: true,
       },
@@ -883,13 +903,15 @@ export class IntegrationRepository {
         deletedAt: new Date(),
       },
     });
+    });
   }
 
   async deleteIntegrationsForAccount(org: string) {
+    return this.reviews.edit(org, undefined, async tx => {
     const hash = (value: string) =>
       createHash('md5').update(value).digest('hex');
 
-    await this._posts.model.post.updateMany({
+    await tx.post.updateMany({
       where: {
         organizationId: org,
         deletedAt: null,
@@ -899,7 +921,7 @@ export class IntegrationRepository {
       },
     });
 
-    const integrations = await this._integration.model.integration.findMany({
+    const integrations = await tx.integration.findMany({
       where: {
         organizationId: org,
       },
@@ -909,7 +931,7 @@ export class IntegrationRepository {
     // by checkPreviousConnections when the same channel is connected again
     // from a new account.
     for (const integration of integrations) {
-      await this._integration.model.integration.update({
+      await tx.integration.update({
         where: {
           id: integration.id,
         },
@@ -932,6 +954,7 @@ export class IntegrationRepository {
         },
       });
     }
+    });
   }
 
   async checkForDeletedOnceAndUpdate(org: string, page: string) {
@@ -997,7 +1020,8 @@ export class IntegrationRepository {
   }
 
   createOrUpdatePlug(org: string, integrationId: string, body: PlugDto) {
-    return this._plugs.model.plugs.upsert({
+    return this.reviews.edit(org, undefined, async tx => {
+    return tx.plugs.upsert({
       where: {
         organizationId: org,
         plugFunction_integrationId: {
@@ -1019,10 +1043,12 @@ export class IntegrationRepository {
         activated: true,
       },
     });
+    });
   }
 
   changePlugActivation(orgId: string, plugId: string, status: boolean) {
-    return this._plugs.model.plugs.update({
+    return this.reviews.edit(orgId, undefined, async tx => {
+    return tx.plugs.update({
       where: {
         organizationId: orgId,
         id: plugId,
@@ -1030,6 +1056,7 @@ export class IntegrationRepository {
       data: {
         activated: !!status,
       },
+    });
     });
   }
 

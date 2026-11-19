@@ -5,11 +5,13 @@ import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import useSWR from 'swr';
 import { useUser } from '@gitroom/frontend/components/layout/user.context';
 import clsx from 'clsx';
+import { useVariables } from '@gitroom/react/helpers/variable.context';
 export const OrganizationSelector: FC<{ asOpenSelect?: boolean }> = ({
   asOpenSelect,
 }) => {
   const fetch = useFetch();
   const user = useUser();
+  const { supabaseAuth } = useVariables();
   const load = useCallback(async () => {
     return await (await fetch('/user/organizations')).json();
   }, []);
@@ -28,6 +30,11 @@ export const OrganizationSelector: FC<{ asOpenSelect?: boolean }> = ({
   }, [current, data]);
   const changeOrg = useCallback(
     (org: { name: string; id: string }) => async () => {
+      if (supabaseAuth) {
+        const response = await window.fetch('/api/auth/brand', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: org.id }) });
+        if (response.ok) window.location.reload();
+        return;
+      }
       await fetch('/user/change-org', {
         method: 'POST',
         body: JSON.stringify({
@@ -36,7 +43,7 @@ export const OrganizationSelector: FC<{ asOpenSelect?: boolean }> = ({
       });
       window.location.reload();
     },
-    []
+    [fetch, supabaseAuth]
   );
   if (isLoading || (!isLoading && data?.length === 1)) {
     return null;

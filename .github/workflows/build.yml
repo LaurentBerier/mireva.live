@@ -1,54 +1,95 @@
 ---
-name: Build
+name: Mireva Build
 
 on:
   push:
+    branches: [main]
   merge_group:
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mireva-build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
-
-    strategy:
-      matrix:
-        node-version: ['22.12.0']
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ['55322:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    # Isolated test fixtures; this job uses no deployment credentials.
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:55322/postgres?schema=postiz
+      DIRECT_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:55322/postgres?schema=postiz
+      AUTH_PROVIDER: supabase
+      IS_GENERAL: 'true'
+      DISABLE_REGISTRATION: 'true'
+      FRONTEND_URL: http://localhost:4200
+      MAIN_URL: http://localhost:4200
+      NEXT_PUBLIC_BACKEND_URL: /api/backend
+      BACKEND_INTERNAL_URL: http://localhost:3000
+      PUBLIC_BACKEND_URL: http://localhost:3000
+      SUPABASE_URL: http://127.0.0.1:55321
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:55321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-publishable-key
+      JWT_SECRET: ci-only-session-secret-never-use-for-deployment
+      ENCRYPTION_PROVIDER: local
+      ENCRYPTION_KEY: '0101010101010101010101010101010101010101010101010101010101010101'
+      PUBLISHING_ENABLED: 'false'
+      ENGAGEMENT_ENABLED: 'false'
+      ADS_WRITES_ENABLED: 'false'
+      RUN_AGENCY_SYNC: 'false'
+      RUN_CRON: 'false'
+      NEXT_PUBLIC_AI_ENABLED: 'false'
+      NODE_OPTIONS: --max-old-space-size=6144
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - name: Use the pinned Node.js version
+        uses: actions/setup-node@v7.1.0
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version-file: .node-version
+          package-manager-cache: false
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v6.1.1
         with:
-          version: 10
+          version: 10.6.1
           run_install: false
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-#      - name: Setup pnpm cache
-#        uses: actions/cache@v4
-#        with:
-#          path: |
-#            ${{ env.STORE_PATH }}
-#            ${{ github.workspace }}/.next/cache
-#          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
-#          restore-keys: |
-#            ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}-
+          cache: true
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations to the disposable test database
+        run: pnpm agency:db:deploy
+
+      - name: Test agency permissions, approvals, recovery and adapter contracts
+        run: pnpm agency:test
+
+      - name: Build API and workers
+        run: pnpm agency:build:services
 
       - name: Build
-        run: pnpm run build
+        run: pnpm --filter postiz-frontend build
+
+      - name: Build the agency extension
+        run: pnpm agency:build:extension

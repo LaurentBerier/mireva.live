@@ -76,6 +76,7 @@ export class PublicAuthMiddleware implements NestMiddleware {
 
       if (overrideOrgId) {
         if (
+          process.env.AUTH_PROVIDER === 'supabase' ||
           isOAuthApp ||
           !(await this._organizationService.canUseSuperAdminApi(org.id))
         ) {

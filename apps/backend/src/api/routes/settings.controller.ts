@@ -17,12 +17,14 @@ import { AdminAddTeamMemberDto } from '@gitroom/nestjs-libraries/dtos/settings/a
 import { ShortlinkPreferenceDto } from '@gitroom/nestjs-libraries/dtos/settings/shortlink-preference.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthorizationActions, Sections } from '@gitroom/backend/services/auth/permissions/permission.exception.class';
+import { WorkspaceService } from '@gitroom/nestjs-libraries/database/prisma/agency/workspace.service';
 
 @ApiTags('Settings')
 @Controller('/settings')
 export class SettingsController {
   constructor(
-    private _organizationService: OrganizationService
+    private _organizationService: OrganizationService,
+    private readonly workspace: WorkspaceService
   ) {}
 
   @Get('/team')
@@ -44,6 +46,11 @@ export class SettingsController {
     @GetUserFromRequest() user: User,
     @Body() body: AddTeamMemberDto
   ) {
+    if (process.env.AUTH_PROVIDER === 'supabase') {
+      if (!body.email || !body.sendEmail) throw new HttpException('Use Agency > Team to send an email invitation', 400);
+      await this.workspace.invite(user.id, org, body.email, body.role as 'ADMIN' | 'USER');
+      return { url: `${process.env.FRONTEND_URL}/agency` };
+    }
     return this._organizationService.inviteTeamMember(org, user, body);
   }
 
@@ -67,8 +74,10 @@ export class SettingsController {
   )
   deleteTeamMember(
     @GetOrgFromRequest() org: Organization,
+    @GetUserFromRequest() user: User,
     @Param('id') id: string
   ) {
+    if (process.env.AUTH_PROVIDER === 'supabase') return this.workspace.updateMember(user.id, org.id, id, { disabled: true });
     return this._organizationService.deleteTeamMember(org, id);
   }
 

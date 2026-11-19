@@ -1,10 +1,22 @@
 import { PrismaRepository } from '@gitroom/nestjs-libraries/database/prisma/prisma.service';
+import { ReviewRepository } from '../agency/review.repository';
+import { Prisma } from '@prisma/client';
 import { Injectable } from '@nestjs/common';
 import { SaveMediaInformationDto } from '@gitroom/nestjs-libraries/dtos/media/save.media.information.dto';
 
 @Injectable()
 export class MediaRepository {
-  constructor(private _media: PrismaRepository<'media'>) {}
+  constructor(private _media: PrismaRepository<'media'>, private readonly reviews: ReviewRepository) {}
+
+  private editMedia<T>(org: string, id: string, action: (tx: Prisma.TransactionClient) => Promise<T>) {
+    return this.reviews.edit(org, async tx => {
+      const asset = await tx.media.findFirst({ where: { id, organizationId: org }, select: { path: true } });
+      const owners = asset ? await tx.media.findMany({ where: { organizationId: org, thumbnail: asset.path }, select: { id: true } }) : [];
+      const relatedIds = [id, ...owners.map(owner => owner.id)];
+      const posts = await tx.post.findMany({ where: { organizationId: org, deletedAt: null, OR: [...relatedIds.map(mediaId => ({ image: { contains: mediaId } })), ...(asset ? [{ image: { contains: asset.path } }, { settings: { contains: asset.path } }] : [])] }, select: { group: true, image: true, settings: true } });
+      return posts.filter(post => (asset && post.settings?.includes(asset.path)) || (JSON.parse(post.image || '[]') as {id?: string; thumbnail?: string; path?: string}[]).some(image => relatedIds.includes(image.id) || image.thumbnail === asset?.path || image.path === asset?.path)).map(post => post.group);
+    }, action);
+  }
 
   saveFile(org: string, fileName: string, filePath: string, originalName?: string) {
     return this._media.model.media.create({
@@ -31,11 +43,11 @@ export class MediaRepository {
   }
 
   startProcessing(org: string, id: string) {
-    return this._media.model.media.update({
+    return this.editMedia(org, id, tx => tx.media.update({
       where: { id, organizationId: org },
       data: { status: 'processing', processingError: null },
       select: { id: true, status: true },
-    });
+    }));
   }
 
   finishProcessing(
@@ -43,7 +55,7 @@ export class MediaRepository {
     id: string,
     data: { name?: string; path?: string; fileSize?: number; error?: string }
   ) {
-    return this._media.model.media.update({
+    return this.editMedia(org, id, tx => tx.media.update({
       where: { id, organizationId: org },
       data: {
         ...(data.name ? { name: data.name } : {}),
@@ -53,7 +65,7 @@ export class MediaRepository {
         processingError: data.error || null,
       },
       select: { id: true, status: true },
-    });
+    }));
   }
 
   getMediaStatus(org: string, id: string) {
@@ -83,9 +95,15 @@ export class MediaRepository {
       },
     });
   }
+  getMediaForOrganization(id: string, organizationId: string) {
+    return this._media.model.media.findFirst({ where: { id, organizationId, deletedAt: null } });
+  }
+  getMediaPathForOrganization(path: string, organizationId: string) {
+    return this._media.model.media.findFirst({ where: { path, organizationId, deletedAt: null }, select: { id: true } });
+  }
 
   deleteMedia(org: string, id: string) {
-    return this._media.model.media.update({
+    return this.editMedia(org, id, tx => tx.media.update({
       where: {
         id,
         organizationId: org,
@@ -93,11 +111,11 @@ export class MediaRepository {
       data: {
         deletedAt: new Date(),
       },
-    });
+    }));
   }
 
   saveMediaInformation(org: string, data: SaveMediaInformationDto) {
-    return this._media.model.media.update({
+    return this.editMedia(org, data.id, tx => tx.media.update({
       where: {
         id: data.id,
         organizationId: org,
@@ -116,7 +134,7 @@ export class MediaRepository {
         path: true,
         thumbnailTimestamp: true,
       },
-    });
+    }));
   }
 
   async getMedia(org: string, page: number, search?: string) {

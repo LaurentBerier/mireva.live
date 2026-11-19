@@ -843,10 +843,11 @@ export class ClippingService {
 
     const keys = this.clipKeys(clipId);
     const org = clip.clipping.organizationId;
-    const path = this.storage.publicUrl!(keys.output);
-    const thumbnail = rendered.thumbnail
-      ? this.storage.publicUrl!(keys.thumbnail)
-      : undefined;
+    const previous = clip.mediaId ? await this._mediaService.getMediaForOrganization(clip.mediaId, org) : null;
+    const sealedVideo = !previous && this.storage.sealFile ? await this.storage.sealFile(keys.output) : null;
+    const path = previous?.path || sealedVideo?.path || this.storage.publicUrl!(keys.output);
+    const sealedThumbnail = rendered.thumbnail && !previous?.thumbnail && this.storage.sealFile ? await this.storage.sealFile(keys.thumbnail) : null;
+    const thumbnail = previous?.thumbnail || (rendered.thumbnail ? sealedThumbnail?.path || this.storage.publicUrl!(keys.thumbnail) : undefined);
 
     // the media id is stored before anything else can fail, so a retried poll
     // finishes the same media instead of saving the file a second time
@@ -855,7 +856,7 @@ export class ClippingService {
       (
         await this._mediaService.saveFile(
           org,
-          keys.output,
+          sealedVideo?.filename || keys.output,
           path,
           `${clip.title}.mp4`
         )
@@ -865,6 +866,9 @@ export class ClippingService {
     }
 
     if (thumbnail) {
+      if (!await this._mediaService.getMediaPathForOrganization(thumbnail, org)) {
+        await this._mediaService.saveFile(org, sealedThumbnail?.filename || keys.thumbnail, thumbnail, `${clip.title} thumbnail.jpg`);
+      }
       await this._mediaService.saveMediaInformation(org, {
         id: mediaId,
         alt: clip.title,
@@ -881,6 +885,7 @@ export class ClippingService {
     });
 
     await this.removeFiles([keys.source, keys.words]);
+    if (sealedVideo || sealedThumbnail) await this.removeFiles([keys.output, keys.thumbnail]);
     return { state: 'done' };
   }
 

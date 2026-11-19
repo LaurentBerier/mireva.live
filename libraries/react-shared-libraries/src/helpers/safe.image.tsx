@@ -2,6 +2,7 @@
 
 import { FC } from 'react';
 import { ImageProps } from 'next/image';
+import { browserMediaUrl } from './browser.media.url';
 
 type SafeImageProps = Omit<ImageProps, 'src'> & {
   src: string;
@@ -18,7 +19,7 @@ const SafeImage: FC<SafeImageProps> = ({
 }) => {
   return (
     <img
-      src={src}
+      src={browserMediaUrl(src)}
       alt={alt?.toString() || ''}
       width={typeof width === 'number' ? width : undefined}
       height={typeof height === 'number' ? height : undefined}

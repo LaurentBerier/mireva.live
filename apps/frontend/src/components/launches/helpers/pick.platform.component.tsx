@@ -8,7 +8,7 @@ import {
   isBrandMark,
   PlatformIcon,
 } from '@gitroom/frontend/components/ui/platform.icon.component';
-import { useCopilotAction, useCopilotReadable } from '@copilotkit/react-core';
+import { OptionalCopilotActions } from '@gitroom/frontend/components/agency/ai.provider';
 import { useStateCallback } from '@gitroom/react/helpers/use.state.callback';
 import { timer } from '@gitroom/helpers/utils/timer';
 export const PickPlatforms: FC<{
@@ -152,14 +152,12 @@ export const PickPlatforms: FC<{
       console.log('changed');
     });
   };
-  useCopilotReadable({
+  const copilotActions = <OptionalCopilotActions readable={{
     description: isMain
       ? 'All available platforms channels'
       : 'Possible platforms channels to edit',
     value: JSON.stringify(integrations),
-  });
-  useCopilotAction(
-    {
+  }} action={{
       name: isMain ? `addOrRemovePlatform` : 'setSelectedIntegration',
       description: isMain
         ? `Add or remove channels to schedule your post to, pass all the ids as array`
@@ -173,16 +171,14 @@ export const PickPlatforms: FC<{
         },
       ],
       handler,
-    },
-    [
+    }} dependencies={[
       addPlatform,
       selectedAccounts,
       integrations,
       onChange,
       props.singleSelect,
       setSelectedAccounts,
-    ]
-  );
+    ]} />;
   if (hide) {
     return null;
   }
@@ -190,6 +186,7 @@ export const PickPlatforms: FC<{
     <div
       className={clsx('flex select-none', props.singleSelect && 'gap-[10px]')}
     >
+      {copilotActions}
       {props.singleSelect && isLeft && (
         <div className="flex items-center">
           {isLeft && (

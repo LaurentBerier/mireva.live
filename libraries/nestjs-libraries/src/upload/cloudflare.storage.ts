@@ -20,7 +20,7 @@ import { parseDataUrl } from '@gitroom/nestjs-libraries/upload/data.url';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { fileTypeFromBuffer } = require('file-type');
 
-const ALLOWED_MIME_TYPES = new Set<string>([
+export const ALLOWED_MIME_TYPES = new Set<string>([
   'image/jpeg',
   'image/png',
   'image/gif',

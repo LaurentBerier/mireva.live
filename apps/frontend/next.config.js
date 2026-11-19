@@ -3,8 +3,11 @@ import { withSentryConfig } from '@sentry/nextjs';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  serverExternalPackages: ['isomorphic-dompurify', 'jsdom', 'canvas'],
   experimental: {
     proxyTimeout: 90_000,
+    webpackMemoryOptimizations: true,
+    webpackBuildWorker: true,
   },
   // Document-Policy header for browser profiling
   async headers() {
@@ -22,12 +25,12 @@ const nextConfig = {
   },
   reactStrictMode: false,
   // Enable production sourcemaps for Sentry
-  productionBrowserSourceMaps: true,
+  productionBrowserSourceMaps: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
 
   // Custom webpack config to ensure sourcemaps are generated properly
   webpack: (config, { buildId, dev, isServer, defaultLoaders }) => {
     // Enable sourcemaps for both client and server in production
-    if (!dev) {
+    if (!dev && process.env.NEXT_PUBLIC_SENTRY_DSN) {
       config.devtool = isServer ? 'source-map' : 'hidden-source-map';
     }
 
@@ -44,7 +47,15 @@ const nextConfig = {
     ];
   },
   async rewrites() {
+    const backend = process.env.VERCEL_ENV === 'preview'
+      ? process.env.STAGING_BACKEND_INTERNAL_URL : process.env.BACKEND_INTERNAL_URL;
+    if (process.env.AUTH_PROVIDER === 'supabase' && process.env.VERCEL_ENV === 'preview' && !backend) {
+      throw new Error('Configure an isolated staging backend before creating preview deployments');
+    }
     return [
+      ...(process.env.AUTH_PROVIDER === 'supabase' && backend
+        ? [{ source: '/api/backend/:path*', destination: `${backend}/:path*` }]
+        : []),
       {
         source: '/uploads/:path*',
         destination:
@@ -56,7 +67,7 @@ const nextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
+export default process.env.NEXT_PUBLIC_SENTRY_DSN ? withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
@@ -108,4 +119,4 @@ export default withSentryConfig(nextConfig, {
     // Don't fail the build if Sentry upload fails in monorepo context
     return;
   },
-});
+}) : nextConfig;

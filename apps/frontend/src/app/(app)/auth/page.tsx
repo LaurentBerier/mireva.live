@@ -1,4 +1,5 @@
 import { internalFetch } from '@gitroom/helpers/utils/internal.fetch';
+import { SupabaseLogin } from '@gitroom/frontend/components/auth/supabase.login';
 export const dynamic = 'force-dynamic';
 import { Register } from '@gitroom/frontend/components/auth/register';
 import { Metadata } from 'next';
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
   description: '',
 };
 export default async function Auth(params: {searchParams: Promise<{provider: string}>}) {
+  if (process.env.AUTH_PROVIDER === 'supabase') return <SupabaseLogin />;
   const t = await getT();
   if (process.env.DISABLE_REGISTRATION === 'true') {
     const canRegister = (

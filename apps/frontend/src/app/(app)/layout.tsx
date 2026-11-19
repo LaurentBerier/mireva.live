@@ -48,8 +48,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         className={clsx(jakartaSans.className, 'dark text-primary !bg-primary')}
       >
         <VariableContextComponent
+          supabaseAuth={process.env.AUTH_PROVIDER === 'supabase'}
           storageProvider={
-            process.env.STORAGE_PROVIDER! as 'local' | 'cloudflare'
+            process.env.STORAGE_PROVIDER! as 'local' | 'cloudflare' | 'supabase'
           }
           environment={process.env.NODE_ENV!}
           backendUrl={process.env.NEXT_PUBLIC_BACKEND_URL!}
@@ -82,7 +83,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           language={language}
           recaptchaSiteKey={process.env.RECAPTCHA_SITE_KEY || ''}
           mediaProcessing={
-            process.env.STORAGE_PROVIDER === 'cloudflare' &&
+            ['cloudflare', 'supabase'].includes(process.env.STORAGE_PROVIDER || '') &&
             !!process.env.RUNPOD_API_KEY &&
             !!process.env.RUNPOD_ENDPOINT_ID
           }

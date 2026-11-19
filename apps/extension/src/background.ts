@@ -6,6 +6,8 @@ const EXTENSION_VERSION = '2.0.0';
 const REFRESH_ALARM_NAME = 'cookie-refresh';
 const STORAGE_KEY = 'refreshEntries';
 
+declare const __AGENCY_ALLOWED_ORIGINS__: string[] | undefined;
+declare const __AGENCY_ALLOWED_BACKENDS__: string[] | undefined;
 const ALLOWED_ORIGIN_PATTERNS = [
   /^https?:\/\/localhost(:\d+)?$/,
   /^https?:\/\/([a-z0-9-]+\.)*postiz\.com$/,
@@ -13,6 +15,9 @@ const ALLOWED_ORIGIN_PATTERNS = [
 
 function isOriginAllowed(origin: string | undefined): boolean {
   if (!origin) return false;
+  if (typeof __AGENCY_ALLOWED_ORIGINS__ !== 'undefined') {
+    try { return __AGENCY_ALLOWED_ORIGINS__.includes(new URL(origin).origin); } catch { return false; }
+  }
   return ALLOWED_ORIGIN_PATTERNS.some((pattern) => pattern.test(origin));
 }
 
@@ -78,6 +83,7 @@ async function refreshAllCookies(): Promise<void> {
   const entries = await getStoredEntries();
   for (const [integrationId, entry] of Object.entries(entries)) {
     try {
+      if (typeof __AGENCY_ALLOWED_BACKENDS__ !== 'undefined' && !__AGENCY_ALLOWED_BACKENDS__.includes(entry.backendUrl)) continue;
       const provider = getProvider(entry.provider);
       if (!provider) continue;
 
@@ -88,6 +94,7 @@ async function refreshAllCookies(): Promise<void> {
 
       await fetch(`${entry.backendUrl}/integrations/extension-refresh`, {
         method: 'POST',
+        redirect: 'error',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jwt: entry.jwt, cookies: base64Cookies }),
       });
@@ -172,6 +179,7 @@ chrome.runtime.onMessageExternal.addListener(
 
       case 'STORE_REFRESH_TOKEN': {
         (async () => {
+          if (typeof __AGENCY_ALLOWED_BACKENDS__ !== 'undefined' && !__AGENCY_ALLOWED_BACKENDS__.includes(message.backendUrl)) throw new Error('Unknown backend');
           const entries = await getStoredEntries();
           entries[message.integrationId] = {
             jwt: message.jwt,

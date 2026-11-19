@@ -16,6 +16,8 @@ export default async function AuthLayout({
 }) {
   const t = await getT();
 
+  if (process.env.AUTH_PROVIDER === 'supabase') return <main className="min-h-screen bg-[#0e0e0e] text-white flex items-center justify-center px-6 py-16"><div className="w-full max-w-md"><p className="mb-8 text-sm font-semibold tracking-widest uppercase text-[#bd9fff]">Agency Workspace</p>{children}</div></main>;
+
   return (
     <MantineWrapper>
       <Toaster />

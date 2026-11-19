@@ -59,6 +59,7 @@ import { stripHtmlValidation } from '@gitroom/helpers/utils/strip.html.validatio
 import { postContentPlainText } from '@gitroom/helpers/utils/sanitize.post.content';
 import { CreatePublicCommentDto } from '@gitroom/nestjs-libraries/dtos/comments/add.comment.dto';
 import { countLength } from '@gitroom/helpers/utils/count.length';
+import { ReviewService } from '@gitroom/nestjs-libraries/database/prisma/agency/review.service';
 
 type PostWithConditionals = Post & {
   integration?: Integration;
@@ -76,7 +77,8 @@ export class PostsService {
     private _shortLinkService: ShortLinkService,
     private _openaiService: OpenaiService,
     private _temporalService: TemporalService,
-    private _refreshIntegrationService: RefreshIntegrationService
+    private _refreshIntegrationService: RefreshIntegrationService,
+    private readonly reviews: ReviewService
   ) {}
 
   searchForMissingThreeHoursPosts() {
@@ -510,6 +512,8 @@ export class PostsService {
 
   async updateMedia(id: string, imagesList: any[], convertToJPEG = false) {
     try {
+      const owner = await this._postRepository.mediaOwner(id);
+      if (!owner) throw new NotFoundException('Post not found');
       let imageUpdateNeeded = false;
       const getImageList = await Promise.all(
         (
@@ -521,17 +525,19 @@ export class PostsService {
 
               if (!p.path) {
                 imageUpdateNeeded = true;
-                return this._mediaService.getMediaById(p.id);
+                return this._mediaService.getMediaForOrganization(p.id, owner.organizationId);
               }
 
               // the normalizer may have replaced the file after the post was
               // composed; a record still processing publishes the original
-              const fresh = await this._mediaService.getMediaById(p.id);
-              if (fresh?.status === 'ready' && fresh.path !== p.path) {
-                imageUpdateNeeded = true;
-                return { ...p, name: fresh.name, path: fresh.path };
+              const fresh = await this._mediaService.getMediaForOrganization(p.id, owner.organizationId);
+              if (!fresh) throw new NotFoundException('Media not found in this brand');
+              if (fresh?.status === 'ready') {
+                if (fresh.path !== p.path) imageUpdateNeeded = true;
+                return { ...p, name: fresh.name, path: fresh.path,
+                  alt: p.alt ?? fresh.alt, thumbnail: p.thumbnail ?? fresh.thumbnail };
               }
-
+              if (process.env.AUTH_PROVIDER === 'supabase') throw new BadRequestException('Media must finish processing before publishing');
               return p;
             })
           )
@@ -563,7 +569,9 @@ export class PostsService {
               imageUpdateNeeded = true;
               // the media url is user-influenced, so it goes through the same
               // SSRF-safe client as the providers' media reads
-              const response = await getSsrfSafeAxios().get(m.url, {
+              const download = this.storage.resolveDownloadUrl ? await this.storage.resolveDownloadUrl(m.url) : m.url;
+              if (download !== m.url && !await this._mediaService.getMediaPathForOrganization(m.url, owner.organizationId)) throw new NotFoundException('Media not found in this brand');
+              const response = await getSsrfSafeAxios().get(download, {
                 responseType: 'arraybuffer',
               });
 
@@ -586,9 +594,11 @@ export class PostsService {
                 originalname: '',
                 encoding: '',
               });
+              const saved = this.storage.resolveDownloadUrl ? await this._mediaService.saveFile(owner.organizationId, originalname, path) : undefined;
 
               return {
                 ...m,
+                ...(saved ? { id: saved.id } : {}),
                 name: originalname,
                 url:
                   path.indexOf('http') === -1
@@ -609,19 +619,43 @@ export class PostsService {
           })
       );
 
-      if (imageUpdateNeeded) {
+      if (imageUpdateNeeded && process.env.AUTH_PROVIDER !== 'supabase' && !(await this.reviews.policy(owner.organizationId))?.approvalRequired) {
         await this._postRepository.updateImages(
           id,
           JSON.stringify(getImageList)
         );
       }
 
-      return getImageList;
+      return Promise.all(getImageList.map(async media => {
+        if (!this.storage.resolveDownloadUrl) return media;
+        const signed = await this.storage.resolveDownloadUrl(media.url);
+        if (signed !== media.url && !await this._mediaService.getMediaPathForOrganization(media.url, owner.organizationId)) throw new NotFoundException('Media not found in this brand');
+        let thumbnail = media.thumbnail;
+        if (thumbnail) {
+          const resolved = await this.storage.resolveDownloadUrl(thumbnail);
+          if (resolved !== thumbnail && !await this._mediaService.getMediaPathForOrganization(thumbnail, owner.organizationId)) throw new NotFoundException('Thumbnail not found in this brand');
+          thumbnail = resolved;
+        }
+        return { ...media, url: signed, path: signed, thumbnail };
+      }));
     } catch (err: any) {
+      if (this.storage.resolveDownloadUrl) throw err;
       return (imagesList || []).filter((m) =>
         this.isAllowedMediaPath(m?.path)
       );
     }
+  }
+
+  // a media path that isn't a remote url is read straight from the worker's
+  async resolveMediaSettings(orgId: string, value: unknown): Promise<any> {
+    if (typeof value === 'string' && this.storage.resolveDownloadUrl) {
+      const resolved = await this.storage.resolveDownloadUrl(value);
+      if (resolved !== value && !await this._mediaService.getMediaPathForOrganization(value, orgId)) throw new NotFoundException('Media in publishing options was not found in this brand');
+      return resolved;
+    }
+    if (Array.isArray(value)) return Promise.all(value.map(item => this.resolveMediaSettings(orgId, item)));
+    if (value && typeof value === 'object') return Object.fromEntries(await Promise.all(Object.entries(value).map(async ([key, item]) => [key, await this.resolveMediaSettings(orgId, item)])));
+    return value;
   }
 
   // a media path that isn't a remote url is read straight from the worker's
@@ -675,7 +709,7 @@ export class PostsService {
         providerIdentifier: rootPost.integration?.providerIdentifier,
         providerName: rootPost.integration?.name,
         state: rootPost.state,
-        error: rootPost.error,
+          error: process.env.AUTH_PROVIDER === 'supabase' && rootPost.error ? 'Delivery failed; inspect server logs using the error IDs' : rootPost.error,
         errors: errors.map((e) => ({
           message: e.message,
           platform: e.platform,
@@ -901,12 +935,12 @@ export class PostsService {
   async deletePost(orgId: string, group: string) {
     const post = await this._postRepository.deletePost(orgId, group);
 
-    if (post?.id) {
+    if (post?.id && /^[A-Za-z0-9_-]{1,100}$/.test(post.id) && /^[A-Za-z0-9_-]{1,100}$/.test(orgId)) {
       try {
         const workflows = this._temporalService.client
           .getRawClient()
           ?.workflow.list({
-            query: `postId="${post.id}" AND ExecutionStatus="Running"`,
+            query: `postId=${JSON.stringify(post.id)} AND organizationId=${JSON.stringify(orgId)} AND ExecutionStatus="Running"`,
           });
 
         for await (const executionInfo of workflows) {
@@ -945,11 +979,20 @@ export class PostsService {
     orgId: string,
     state: State
   ) {
+    if (!/^[A-Za-z0-9_-]{1,100}$/.test(postId) || !/^[A-Za-z0-9_-]{1,100}$/.test(orgId)) throw new BadRequestException('Invalid publishing identifier');
+    if (state !== 'DRAFT') await this.reviews.assertApproved(orgId, postId);
+    if (state === 'DRAFT') {
+      try {
+        await this._temporalService.client.getRawClient().workflow.getHandle(`post_${postId}`).terminate('Post cancelled or returned to draft');
+      } catch (error) {
+        if (process.env.AUTH_PROVIDER === 'supabase' && !(error instanceof Error && error.name === 'WorkflowNotFoundError')) throw error;
+      }
+    }
     try {
       const workflows = this._temporalService.client
         .getRawClient()
         ?.workflow.list({
-          query: `postId="${postId}" AND ExecutionStatus="Running"`,
+          query: `postId=${JSON.stringify(postId)} AND organizationId=${JSON.stringify(orgId)} AND ExecutionStatus="Running"`,
         });
 
       for await (const executionInfo of workflows) {
@@ -965,16 +1008,19 @@ export class PostsService {
           }
         } catch (err) {}
       }
-    } catch (err) {}
+    } catch (err) { if (process.env.AUTH_PROVIDER === 'supabase') throw err; }
 
     if (state === 'DRAFT') {
       return;
     }
 
     try {
+      if (process.env.AUTH_PROVIDER === 'supabase' && !this._temporalService.client.getRawClient()) {
+        throw new Error('The publishing scheduler is unavailable');
+      }
       await this._temporalService.client
         .getRawClient()
-        ?.workflow.start('postWorkflowV112', {
+        ?.workflow.start('postWorkflowV113', {
           workflowId: `post_${postId}`,
           taskQueue: 'main',
           workflowIdConflictPolicy: 'TERMINATE_EXISTING',
@@ -996,7 +1042,13 @@ export class PostsService {
             },
           ]),
         });
-    } catch (err) {}
+    } catch (err) {
+      if (process.env.AUTH_PROVIDER === 'supabase') throw err;
+    }
+  }
+
+  failScheduledVersion(orgId: string, id: string, version: number, owner: string, error: string, fingerprint?: string) {
+    return this._postRepository.failScheduledVersion(orgId, id, version, owner, error, fingerprint);
   }
 
   /**
@@ -1125,11 +1177,20 @@ export class PostsService {
     orgId: string,
     body: CreatePostDto,
     creationMethod: CreationMethod,
-    keepGroup = false
+    keepGroup = false,
+    importLease?: { id: string; owner: string }
   ): Promise<any[]> {
+    const approvalRequired = (await this.reviews.policy(orgId))?.approvalRequired;
+    if (approvalRequired && !['draft', 'update'].includes(body.type)) {
+      throw new BadRequestException('Save this post as a draft, request client approval in Agency, then schedule the approved version.');
+    }
+    // Editing a scheduled version returns it to draft. A previous approval
+    // cannot authorize the newly saved content, settings, media, or date.
+    if (approvalRequired && body.type === 'update') body.type = 'draft';
     const postList = [];
     const batchId = uuidv4();
     for (const post of body.posts) {
+      if ((post.value || []).some(value => value.id && !/^[A-Za-z0-9_-]{1,100}$/.test(value.id))) throw new BadRequestException('Post IDs may contain up to 100 letters, numbers, underscores, or hyphens');
       // the posts to update can't belong to another organization, an id that
       // doesn't exist yet is a new post (the editor makes one for every post)
       const postIds = [
@@ -1175,7 +1236,8 @@ export class PostsService {
         creationMethod,
         body.inter,
         keepGroup,
-        batchId
+        batchId,
+        importLease
       );
 
       if (!posts?.length) {
@@ -1183,17 +1245,17 @@ export class PostsService {
       }
 
       const existingIds = (post.value || []).map((p) => p.id).filter(Boolean);
-      await this.detachStaleAnchors(
+      if (!importLease) await this.detachStaleAnchors(
         posts.filter((p) => existingIds.includes(p.id))
       );
 
-      if (body.type !== 'update') {
-        this.startWorkflow(
+      if (body.type !== 'update' && !importLease) {
+        await this.startWorkflow(
           post.settings.__type.split('-')[0].toLowerCase(),
           posts[0].id,
           orgId,
           posts[0].state
-        ).catch((err) => {});
+        );
       }
 
       Sentry.metrics.count('post_created', 1);
@@ -1402,7 +1464,11 @@ export class PostsService {
     }
 
     const state: State = status === 'draft' ? 'DRAFT' : 'QUEUE';
-    await this._postRepository.changeState(id, state);
+    if (state === 'QUEUE') await this.reviews.assertApproved(orgId, id);
+    if (state === 'QUEUE' && (await this.reviews.policy(orgId))?.approvalRequired && getPostById.publishDate <= new Date()) {
+      throw new BadRequestException('The approved publishing time has passed. Choose a future time and request a new review.');
+    }
+    await this._postRepository.changeScheduledState(orgId, id, state);
 
     try {
       await this.startWorkflow(
@@ -1411,7 +1477,7 @@ export class PostsService {
         orgId,
         state
       );
-    } catch (err) {}
+    } catch (err) { if (process.env.AUTH_PROVIDER === 'supabase') throw err; }
 
     return { id, state };
   }
@@ -1423,6 +1489,8 @@ export class PostsService {
     action: 'schedule' | 'update' = 'schedule'
   ) {
     const getPostById = await this._postRepository.getPostById(id, orgId);
+    if (!getPostById) throw new NotFoundException('Post not found');
+    const requiresReview = (await this.reviews.policy(orgId))?.approvalRequired;
 
     // schedule: Set status to QUEUE and change date (reschedule the post)
     // update: Just change the date without changing the status
@@ -1430,11 +1498,11 @@ export class PostsService {
       orgId,
       id,
       date,
-      getPostById.state === 'DRAFT',
+      requiresReview || getPostById.state === 'DRAFT',
       action
     );
 
-    if (action === 'schedule') {
+    if (action === 'schedule' || requiresReview) {
       try {
         await this.startWorkflow(
           getPostById.integration.providerIdentifier
@@ -1442,9 +1510,9 @@ export class PostsService {
             .toLowerCase(),
           getPostById.id,
           orgId,
-          getPostById.state === 'DRAFT' ? 'DRAFT' : 'QUEUE'
+          requiresReview || getPostById.state === 'DRAFT' ? 'DRAFT' : 'QUEUE'
         );
-      } catch (err) {}
+      } catch (err) { if (process.env.AUTH_PROVIDER === 'supabase') throw err; }
     }
 
     return newDate;

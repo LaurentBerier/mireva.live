@@ -37,7 +37,21 @@
     "docker-build": "./var/docker/docker-build.sh",
     "docker-create": "./var/docker/docker-create.sh",
     "postinstall": "pnpm run prisma-generate",
-    "test": "jest --coverage --detectOpenHandles --reporters=default --reporters=jest-junit"
+    "test": "jest --coverage --detectOpenHandles --reporters=default --reporters=jest-junit",
+    "agency:build:services": "pnpm --filter postiz-backend build && pnpm --filter postiz-orchestrator build && node scripts/agency-link-runtime.mjs",
+    "agency:dev": "node scripts/agency-dev.mjs",
+    "agency:bootstrap": "node scripts/agency-bootstrap.mjs",
+    "agency:db:deploy": "prisma migrate deploy --schema libraries/nestjs-libraries/src/database/prisma/schema.prisma",
+    "agency:test": "jest --config jest.agency.config.cjs --runInBand",
+    "agency:build:extension": "pnpm --filter postiz-extension exec vite build --config vite.config.agency.ts",
+    "agency:temporal:prepare": "node scripts/agency-prepare-temporal.mjs",
+    "agency:local:env": "node scripts/agency-local-env.mjs",
+    "agency:infra:start": "supabase start && docker compose -f deploy/docker-compose.dependencies.yml up -d",
+    "agency:test:http": "node tests/agency/http.local.mjs",
+    "agency:source": "node scripts/agency-source.mjs",
+    "agency:test:restore": "node tests/agency/restore.local.mjs",
+    "agency:test:temporal-restore": "node tests/agency/temporal.restore.local.mjs",
+    "agency:test:image": "node tests/agency/image.local.mjs"
   },
   "dependencies": {
     "@ag-ui/mastra": "^1.1.4",
@@ -90,6 +104,8 @@
     "@solana/wallet-adapter-react-ui": "^0.9.35",
     "@stripe/react-stripe-js": "^5.4.1",
     "@stripe/stripe-js": "^8.6.0",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.119.1",
     "@swc/helpers": "0.5.13",
     "@temporalio/activity": "^1.14.0",
     "@temporalio/client": "^1.14.0",
@@ -148,6 +164,7 @@
     "compression": "^1.8.2",
     "cookie-parser": "^1.4.7",
     "copy-to-clipboard": "^3.3.3",
+    "csv-parse": "7.0.3",
     "dayjs": "1.11.19",
     "dotenv": "^16.5.0",
     "dotenv-cli": "^8.0.0",
@@ -174,7 +191,7 @@
     "nestjs-command": "^3.1.4",
     "nestjs-real-ip": "^3.0.1",
     "nestjs-temporal-core": "^3.2.0",
-    "next": "16.4.2",
+    "next": "16.4.6",
     "next-plausible": "^3.12.0",
     "node-fetch": "^3.3.2",
     "node-telegram-bot-api": "^0.66.0",
@@ -183,7 +200,9 @@
     "openai": "^6.2.0",
     "p-limit": "^3.1.0",
     "parse5": "^6.0.1",
+    "pdfkit": "0.20.2",
     "polotno": "^3.0.0-beta.25",
+    "pptxgenjs": "4.0.1",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-colorful": "^5.6.1",
@@ -247,6 +266,7 @@
     "@types/jest": "29.5.12",
     "@types/node": "18.16.9",
     "@types/node-telegram-bot-api": "^0.64.7",
+    "@types/pdfkit": "0.17.7",
     "@types/qrcode": "^1.5.5",
     "@types/react": "19.1.8",
     "@types/react-dom": "19.1.6",
@@ -268,6 +288,7 @@
     "postcss": "8.5.26",
     "prettier": "^2.6.2",
     "prisma": "6.5.0",
+    "supabase": "3.2.0",
     "ts-jest": "^29.1.0",
     "tsup": "^8.5.0",
     "typescript": "5.5.4",
@@ -276,7 +297,8 @@
     "vitest": "4.1.12"
   },
   "volta": {
-    "node": "20.17.0"
+    "node": "22.23.4",
+    "pnpm": "10.6.1"
   },
   "jest-junit": {
     "outputDirectory": "./reports",
@@ -285,7 +307,7 @@
   "pnpm": {
     "overrides": {
       "multer": "^2.5.0",
-      "next": "16.4.2",
+      "next": "16.4.6",
       "react": "19.2.4",
       "react-dom": "19.2.4",
       "@types/react": "19.1.8",

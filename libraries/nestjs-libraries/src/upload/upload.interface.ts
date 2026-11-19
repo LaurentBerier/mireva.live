@@ -8,6 +8,7 @@ export interface UploadedStream {
 }
 
 export interface IUploadProvider {
+  resolveDownloadUrl?(path: string): Promise<string>;
   uploadSimple(path: string): Promise<string>;
   uploadFile(file: Express.Multer.File): Promise<any>;
   // Streams the body straight into storage without buffering it. The caller
@@ -25,6 +26,8 @@ export interface IUploadProvider {
   signUploadUrl?(fileName: string, contentType: string): Promise<string>;
   // Public URL of a key the media processor wrote through a presigned upload
   publicUrl?(fileName: string): string;
+  // Create a fresh object whose key was never shared with an external writer.
+  sealFile?(fileName: string): Promise<{ filename: string; path: string }>;
   // Small text files (a transcript) exchanged with the media processor under a
   // key both sides know, where uploadSimple would pick a random one
   readFile?(fileName: string): Promise<string>;

@@ -1,3 +1,5 @@
+> Agency customization: see [setup, implementation status and validation](docs/agency/README.md), the [feature inventory](docs/agency/feature-inventory.md), and the [deployment runbook](docs/agency/runbook.md). This fork targets Supabase and Vercel; full combined product parity and live network activation remain tracked release work.
+
 <p align="center">
   <a href="https://postiz.com/" target="_blank">
   <picture>

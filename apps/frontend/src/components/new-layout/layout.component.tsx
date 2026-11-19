@@ -27,7 +27,7 @@ import { NewSubscription } from '@gitroom/frontend/components/layout/new.subscri
 import { Support } from '@gitroom/frontend/components/layout/support';
 import { ContinueProvider } from '@gitroom/frontend/components/layout/continue.provider';
 import { ContextWrapper } from '@gitroom/frontend/components/layout/user.context';
-import { CopilotKit } from '@copilotkit/react-core';
+import { OptionalCopilot } from '@gitroom/frontend/components/agency/ai.provider';
 import { MantineWrapper } from '@gitroom/react/helpers/mantine.wrapper';
 import { Impersonate } from '@gitroom/frontend/components/layout/impersonate';
 import { AnnouncementBanner } from '@gitroom/frontend/components/layout/announcement.banner';
@@ -45,6 +45,8 @@ import { FirstBillingComponent } from '@gitroom/frontend/components/billing/firs
 import { TrialTracker } from '@gitroom/frontend/components/layout/gtm.component';
 import { setSentryUser } from '@gitroom/react/sentry/initialize.sentry.client';
 import { setUserTimezone } from '@gitroom/frontend/components/layout/set.timezone';
+import { AgencySessionKeeper } from '@gitroom/frontend/components/agency/session.keeper';
+import Link from 'next/link';
 
 export const LayoutComponent = ({ children }: { children: ReactNode }) => {
   const fetch = useFetch();
@@ -63,7 +65,7 @@ export const LayoutComponent = ({ children }: { children: ReactNode }) => {
   }, []);
   const { data: user, mutate } = useSWR('/user/self', load, {
     // set before anything renders a date in the user's timezone
-    onSuccess: (data) => setUserTimezone(data?.timezoneName),
+    onSuccess: (data) => setUserTimezone(data?.brandTimezoneName || data?.timezoneName),
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     revalidateIfStale: false,
@@ -79,14 +81,12 @@ export const LayoutComponent = ({ children }: { children: ReactNode }) => {
 
   if (!user) return null;
 
+  if (user.role === 'REVIEWER') return <ContextWrapper user={user}><AgencySessionKeeper /><main className="min-h-screen w-full bg-[var(--new-bgColor)] text-[rgb(var(--new-textColor))]"><header className="flex justify-between border-b border-[var(--new-border)] px-6 py-4"><span className="font-semibold">Client workspace</span><Link href="/auth/logout" className="text-sm underline">Sign out</Link></header>{pathname.startsWith('/agency') ? children : <div className="p-8"><Link href="/agency" className="underline">Open your brand reviews and reports</Link></div>}</main></ContextWrapper>;
+
   return (
     <ContextWrapper user={user}>
-      <CopilotKit
-        credentials="include"
-        runtimeUrl={backendUrl + '/copilot/chat'}
-        useSingleEndpoint={true}
-        showDevConsole={false}
-      >
+      <AgencySessionKeeper />
+      <OptionalCopilot runtimeUrl={backendUrl + '/copilot/chat'}>
         <MantineWrapper>
           <ToolTip />
           <Toaster />
@@ -138,6 +138,7 @@ export const LayoutComponent = ({ children }: { children: ReactNode }) => {
                             <Logo />
                           </div>
                           <TopMenu />
+                          <a href="/api/backend/agency-public/source" className="px-1 text-center text-[10px] opacity-60 underline">Source &amp; license</a>
                         </div>
                       </div>
                     </div>
@@ -197,7 +198,7 @@ export const LayoutComponent = ({ children }: { children: ReactNode }) => {
             </div>
           </CheckPayment>
         </MantineWrapper>
-      </CopilotKit>
+      </OptionalCopilot>
     </ContextWrapper>
   );
 };

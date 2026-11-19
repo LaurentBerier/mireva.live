@@ -2,6 +2,7 @@
 
 import { createContext, FC, ReactNode, useContext, useEffect } from 'react';
 interface VariableContextInterface {
+  supabaseAuth?: boolean;
   stripeClient: string;
   billingEnabled: boolean;
   isChatBase: boolean;
@@ -14,7 +15,7 @@ interface VariableContextInterface {
   mainUrl: string;
   frontEndUrl: string;
   plontoKey: string;
-  storageProvider: 'local' | 'cloudflare';
+  storageProvider: 'local' | 'cloudflare' | 'supabase';
   backendUrl: string;
   environment: string;
   discordUrl: string;

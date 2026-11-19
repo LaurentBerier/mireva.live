@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException } from '@nestjs/common';
+import { ReviewService } from '@gitroom/nestjs-libraries/database/prisma/agency/review.service';
+import { AgencyDeliveryService } from '@gitroom/nestjs-libraries/database/prisma/agency/delivery.service';
+import { Context } from '@temporalio/activity';
+import { createHash } from 'crypto';
+import { ApplicationFailure } from '@temporalio/common';
 import {
   Activity,
   ActivityMethod,
@@ -105,8 +110,74 @@ export class PostActivity {
     private _refreshIntegrationService: RefreshIntegrationService,
     private _webhookService: WebhooksService,
     private _temporalService: TemporalService,
-    private _subscriptionService: SubscriptionService
+    private _subscriptionService: SubscriptionService,
+    private readonly reviews: ReviewService,
+    private readonly deliveries: AgencyDeliveryService
   ) {}
+
+  private async approvedMutation<T>(integration: Integration, post: Pick<Post, 'id' | 'approvalVersion'> & { reviewFingerprint?: string }, operation: string, occurrence: string, action: () => Promise<T>) {
+    const current = await this._integrationService.getIntegrationById(integration.organizationId, integration.id);
+    if (!current || current.disabled || current.deletedAt || current.refreshNeeded) throw ApplicationFailure.nonRetryable('The channel is unavailable. Reconnect it before publishing.', 'bad_body');
+    Object.assign(integration, current);
+    await this.assertPostApprovedV1(integration.organizationId, post.id, post.approvalVersion, post.reviewFingerprint);
+    if (integration.tokenExpiration && new Date(integration.tokenExpiration).getTime() < Date.now() + 60000) {
+      const refreshed = await this._refreshIntegrationService.refresh(await this._integrationService.decryptTokens(integration));
+      if (!refreshed) throw ApplicationFailure.nonRetryable('Reconnect the expired channel before publishing', 'bad_body');
+      integration.token = refreshed.accessToken; integration.refreshToken = refreshed.refreshToken;
+      integration.tokenExpiration = new Date(Date.now() + refreshed.expiresIn * 1000);
+    }
+    try {
+      return await this.deliveries.execute(integration.organizationId, post.id, post.approvalVersion,
+        Context.current().info.workflowExecution.runId, operation, occurrence, action, post.reviewFingerprint);
+    } catch (error) {
+      if (error instanceof HttpException && [409, 403].includes(error.getStatus())) throw ApplicationFailure.nonRetryable(error.message, 'bad_body');
+      throw error;
+    }
+  }
+
+  @ActivityMethod()
+  postSocialApprovedV1(integration: Integration, posts: Post[], occurrence: string) {
+    return this.approvedMutation(integration, posts[0], 'publish', occurrence, () => this.postSocialPending(integration, posts));
+  }
+
+  @ActivityMethod()
+  postCommentApprovedV1(postId: string, lastPostId: string | undefined, integration: Integration, posts: Post[], occurrence: string) {
+    return this.approvedMutation(integration, posts[0], 'comment', occurrence, () => this.postComment(postId, lastPostId, integration, posts));
+  }
+
+  @ActivityMethod()
+  finalizePostApprovedV1(integration: Integration, pendingData: any, postId: string, version: number, occurrence: string, reviewFingerprint?: string) {
+    const stage = createHash('sha256').update(JSON.stringify(pendingData)).digest('hex');
+    return this.approvedMutation(integration, { id: postId, approvalVersion: version, reviewFingerprint }, `finalize:${stage}`, occurrence, () => this.finalizePost(integration, pendingData));
+  }
+
+  @ActivityMethod()
+  releaseDeliveryV1(orgId: string, owner: string) { return this.deliveries.release(orgId, owner); }
+  @ActivityMethod()
+  confirmDeliveryV1(orgId: string, postId: string, owner: string) { return this.deliveries.confirmed(orgId, postId, owner); }
+
+  @ActivityMethod()
+  async processPlugApprovedV1(data: Parameters<PostActivity['processPlug']>[0], orgId: string, postId: string, version: number, occurrence: string, reviewFingerprint?: string) {
+    const post = await this._postService.getPostById(postId, orgId);
+    try { return await this.approvedMutation(post.integration, { id: postId, approvalVersion: version, reviewFingerprint }, `plug:${data.plugId}:${data.currentRun}`, occurrence, () => this.processPlug(data)); }
+    finally { await this.deliveries.release(orgId, Context.current().info.workflowExecution.runId); }
+  }
+  @ActivityMethod()
+  async processInternalPlugApprovedV1(data: Parameters<PostActivity['processInternalPlug']>[0], orgId: string, postId: string, version: number, occurrence: string, reviewFingerprint?: string) {
+    const post = await this._postService.getPostById(postId, orgId);
+    const key = createHash('sha256').update(JSON.stringify(data)).digest('hex');
+    try { return await this.approvedMutation(post.integration, { id: postId, approvalVersion: version, reviewFingerprint }, `internal-plug:${key}`, occurrence, () => this.processInternalPlug(data)); }
+    finally { await this.deliveries.release(orgId, Context.current().info.workflowExecution.runId); }
+  }
+
+  @ActivityMethod()
+  async assertPostApprovedV1(orgId: string, postId: string, version?: number, fingerprint?: string) {
+    if (process.env.PUBLISHING_ENABLED !== 'true') {
+      throw ApplicationFailure.nonRetryable('Live publishing is disabled in this environment', 'bad_body');
+    }
+    try { await this.reviews.assertApproved(orgId, postId, version, fingerprint); }
+    catch { throw ApplicationFailure.nonRetryable('The current post version requires client approval', 'bad_body'); }
+  }
 
   @ActivityMethod()
   async getIntegrationById(orgId: string, id: string) {
@@ -125,7 +196,7 @@ export class PostActivity {
 
       await this._temporalService.client
         .getRawClient()
-        .workflow.signalWithStart('postWorkflowV112', {
+        .workflow.signalWithStart('postWorkflowV113', {
           workflowId: `post_${post.id}`,
           taskQueue: 'main',
           signal: 'poke',
@@ -175,6 +246,35 @@ export class PostActivity {
     }
 
     return reanchorInterval(post);
+  }
+
+  @ActivityMethod()
+  async getPostForApprovalV1(orgId: string, postId: string) {
+    const post = await this.getPost(orgId, postId);
+    if (!post) return false;
+    const original = await this._postService.getPostById(postId, orgId);
+    let date: string = original.publishDate.toISOString();
+    if (original.state === 'QUEUE' && original.intervalInDays > 0 && Date.now() - +original.publishDate > REANCHOR_GRACE_MS) {
+      const policy = await this.reviews.policy(orgId);
+      const elapsedDays = Math.floor((Date.now() - +original.publishDate) / 86400000 / original.intervalInDays) * original.intervalInDays;
+      date = this.reviews.nextOccurrence(date, elapsedDays, policy.timezoneName);
+      while (+new Date(date) <= Date.now()) date = this.reviews.nextOccurrence(date, original.intervalInDays, policy.timezoneName);
+    }
+    return { ...post, publishDate: new Date(date), recurrenceAnchor: original.publishDate.toISOString(), reviewFingerprint: await this.reviews.fingerprint(orgId, postId) };
+  }
+
+  @ActivityMethod()
+  nextRecurringOccurrenceV1(orgId: string, anchor: string, days: number, wallAnchor: string) { return this.reviews.recurringOccurrence(orgId, anchor, days, wallAnchor); }
+
+  @ActivityMethod()
+  async resolveRecurringOccurrenceV1(orgId: string, anchor: string, days: number, wallAnchor: string) {
+    const policy = await this.reviews.policy(orgId);
+    return this.reviews.availableOccurrence(anchor, days, policy.timezoneName, Date.now(), wallAnchor);
+  }
+
+  @ActivityMethod()
+  failScheduledVersionV1(orgId: string, id: string, version: number, owner: string, error: string, fingerprint?: string) {
+    return this._postService.failScheduledVersion(orgId, id, version, owner, error, fingerprint);
   }
 
   @ActivityMethod()
@@ -252,7 +352,7 @@ export class PostActivity {
                 !/<\/?[a-z][\s\S]*>/i.test(p.content),
                 getIntegration.mentionFormat
               ),
-              settings: JSON.parse(p.settings || '{}'),
+              settings: await this._postService.resolveMediaSettings(integration.organizationId, JSON.parse(p.settings || '{}')),
               media: await this._postService.updateMedia(
                 p.id,
                 JSON.parse(p.image || '[]'),
@@ -385,6 +485,9 @@ export class PostActivity {
     posts: Post[],
     allowPending: boolean
   ) {
+    if (process.env.AUTH_PROVIDER === 'supabase') {
+      await this.assertPostApprovedV1(integration.organizationId, posts[0].id, posts[0].approvalVersion);
+    }
     // The channel still holds the account id of the login step: no page was
     // selected, so the platform would reject the post. Thrown as BadBody so
     // every workflow version - frozen once on main - fails the post with this
@@ -463,7 +566,7 @@ export class PostActivity {
           getIntegration.mentionFormat,
           !!getIntegration.inlineImages?.(JSON.parse(p.settings || '{}'))
         ),
-        settings: JSON.parse(p.settings || '{}'),
+        settings: await this._postService.resolveMediaSettings(integration.organizationId, JSON.parse(p.settings || '{}')),
         media: await this._postService.updateMedia(
           p.id,
           JSON.parse(p.image || '[]'),

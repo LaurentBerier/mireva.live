@@ -101,6 +101,8 @@ export class MediaService {
   getMediaById(id: string) {
     return this._mediaRepository.getMediaById(id);
   }
+  getMediaForOrganization(id: string, organizationId: string) { return this._mediaRepository.getMediaForOrganization(id, organizationId); }
+  getMediaPathForOrganization(path: string, organizationId: string) { return this._mediaRepository.getMediaPathForOrganization(path, organizationId); }
 
   async generateImage(
     prompt: string,
@@ -188,6 +190,11 @@ export class MediaService {
     originalName?: string
   ) {
     const media = await this.saveFile(org, fileName, filePath, originalName);
+    return this.processSavedFile(org, media);
+  }
+
+  async processSavedFile(org: string, media: { id: string; name: string; path: string; status: string; [key: string]: any }) {
+    const fileName = media.name;
     const client = this._temporalService.client.getRawClient();
     if (
       !this.processor ||
@@ -223,11 +230,14 @@ export class MediaService {
   // converted (mov) is failed, since nothing downstream can use it
   private async releaseUnprocessed(org: string, id: string, name: string) {
     const convertOnly = !USABLE_AS_IS.has(extname(name).toLowerCase());
+    const sealed = !convertOnly && this.storage.sealFile ? await this.storage.sealFile(name) : null;
     await this._mediaRepository.finishProcessing(org, id, {
+      ...(sealed ? { name: sealed.filename, path: sealed.path } : {}),
       ...(convertOnly
         ? { error: 'No media processor is available to convert this file' }
         : {}),
     });
+    if (sealed) await this.storage.removeFile(name).catch(() => {});
     return this._mediaRepository.getMediaStatus(org, id);
   }
 
@@ -453,22 +463,24 @@ export class MediaService {
     }
 
     if (result.status === 'unchanged') {
-      await this._mediaRepository.finishProcessing(org, mediaId, {});
+      await this.releaseUnprocessed(org, mediaId, media.name);
       return true;
     }
 
     const outputName = this.normalizedName(media.name);
+    const sealed = this.storage.sealFile ? await this.storage.sealFile(outputName) : null;
     await this._mediaRepository.finishProcessing(org, mediaId, {
-      name: outputName,
-      path: media.path.slice(0, media.path.lastIndexOf('/') + 1) + outputName,
+      name: sealed?.filename || outputName,
+      path: sealed?.path || (this.storage.publicUrl ? this.storage.publicUrl(outputName) : media.path.slice(0, media.path.lastIndexOf('/') + 1) + outputName),
       fileSize: result.output?.bytes,
     });
 
     // a same-key output already replaced the original; a stray object after a
     // container change is harmless, so a failed delete never fails the media
-    if (outputName !== media.name) {
+    if (outputName !== media.name || sealed) {
       try {
         await this.storage.removeFile(media.name);
+        if (sealed && outputName !== media.name) await this.storage.removeFile(outputName);
       } catch (err) {
         console.error(`Could not remove original media ${media.name}:`, err);
       }
@@ -495,7 +507,12 @@ export class MediaService {
     return this._mediaRepository.getMedia(org, page, search);
   }
 
-  saveMediaInformation(org: string, data: SaveMediaInformationDto) {
+  async saveMediaInformation(org: string, data: SaveMediaInformationDto) {
+    if (data.thumbnail && this.storage.resolveDownloadUrl &&
+      await this.storage.resolveDownloadUrl(data.thumbnail) !== data.thumbnail &&
+      !await this._mediaRepository.getMediaPathForOrganization(data.thumbnail, org)) {
+      throw new BadRequestException('Choose a thumbnail from this brand media library');
+    }
     return this._mediaRepository.saveMediaInformation(org, data);
   }
 

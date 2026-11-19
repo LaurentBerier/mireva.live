@@ -29,7 +29,7 @@ import { MultiMediaComponent } from '@gitroom/frontend/components/media/media.co
 import { UpDownArrow } from '@gitroom/frontend/components/launches/up.down.arrow';
 import { deleteDialog } from '@gitroom/react/helpers/delete.dialog';
 import { useExistingData } from '@gitroom/frontend/components/launches/helpers/use.existing.data';
-import { useCopilotAction, useCopilotReadable } from '@copilotkit/react-core';
+import { OptionalCopilotActions } from '@gitroom/frontend/components/agency/ai.provider';
 import { useDropzone } from 'react-dropzone';
 import { useUppyUploader } from '@gitroom/frontend/components/media/new.uploader';
 import { Dashboard } from '@uppy/react';
@@ -269,12 +269,10 @@ export const EditorWrapper: FC<{
     [internal, items]
   );
 
-  useCopilotReadable({
+  const copilotActions = <OptionalCopilotActions readable={{
     description: 'Current content of posts',
     value: items.map((p) => p.content),
-  });
-
-  useCopilotAction({
+  }} action={{
     name: 'setPosts',
     description: 'a thread of posts',
     parameters: [
@@ -287,7 +285,7 @@ export const EditorWrapper: FC<{
     handler: async ({ content }) => {
       setValue(content);
     },
-  });
+  }} />;
 
   const changeValue = useCallback(
     (index: number) => (value: string) => {
@@ -462,6 +460,7 @@ export const EditorWrapper: FC<{
           'bg-newSettings mobile:bg-transparent rounded-[12px]'
       )}
     >
+      {copilotActions}
       {isCreateSet && current !== 'global' && (
         <>
           <div className="text-center absolute w-full h-full left-0 top-0 items-center justify-center flex z-[101] flex-col gap-[16px]">

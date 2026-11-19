@@ -1,0 +1,2151 @@
+{
+  "schemaVersion": 1,
+  "baselineDate": "2026-11-19",
+  "baselineCommit": "2f24e10f2204295f66a1999679e9896db3cb2094",
+  "baselineRepository": "https://github.com/gitroomhq/postiz-app",
+  "scope": {
+    "initialBrands": 10,
+    "defaultTimezone": "America/Toronto",
+    "audience": "internal_agency_with_client_reviewers",
+    "activation": "progressive",
+    "nativeMobileApps": false,
+    "subscriptionBilling": false
+  },
+  "statusLegend": {
+    "inherited_unverified": "Code exists in pinned upstream; integration and live behavior have not been verified here.",
+    "planned": "Approved requirement requiring implementation or equivalence verification.",
+    "inactive_upstream": "Source exists but is not registered.",
+    "implemented_local": "Implemented and exercised locally; hosted deployment and live provider verification are separate release gates.",
+    "partial": "A working subset is implemented; the implementation note identifies remaining coverage."
+  },
+  "sources": {
+    "providerManager": "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/integration.manager.ts",
+    "postizPlatforms": "https://docs.postiz.com/general/platforms/overview",
+    "postizSetup": "https://docs.postiz.com/self-host/providers/overview",
+    "metricoolConnections": "https://help.metricool.com/how-to-connect-social-media-and-ad-platforms-to-metricool-qrkvn",
+    "metricoolFeatures": "https://metricool.com/"
+  },
+  "discrepancies": [
+    "Postiz public overview says 34 platforms; pinned manager registers 35 identifiers. Adapter identifiers differ from distinct network counts.",
+    "mastodon-custom source exists but is commented out in IntegrationManager.",
+    "The public guide labels some adapters API-only; actual connection surfaces need verification."
+  ],
+  "phases": [
+    {
+      "id": 1,
+      "name": "Foundation and client access"
+    },
+    {
+      "id": 2,
+      "name": "Publishing"
+    },
+    {
+      "id": 3,
+      "name": "Analytics and reporting"
+    },
+    {
+      "id": 4,
+      "name": "Engagement"
+    },
+    {
+      "id": 5,
+      "name": "Growth and advanced creation"
+    }
+  ],
+  "features": [
+    {
+      "id": "split-deployment",
+      "name": "Vercel frontend and Docker backend/orchestrator",
+      "phase": 1,
+      "implementation": "partial",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/README.md"
+      ],
+      "notes": "Approved customization; not established by the source baseline.",
+      "implementationNote": "Independent Next.js/Vercel configuration, source-based Docker image and supporting Compose prepared. Cloud deployment and host capacity validation pending.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "supabase-auth",
+      "name": "Supabase invitations, sessions and password recovery",
+      "phase": 1,
+      "implementation": "implemented_local",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/README.md"
+      ],
+      "notes": "Approved customization; not established by the source baseline.",
+      "implementationNote": "Invitation-only email identities, confirmed server-verified sessions, recovery callback, owner bootstrap and role-independent identity mapping. Hosted SMTP/domain validation pending.",
+      "validationStatus": "local_checks_passed"
+    },
+    {
+      "id": "supabase-database",
+      "name": "Private application schema and Prisma migrations",
+      "phase": 1,
+      "implementation": "implemented_local",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/README.md"
+      ],
+      "notes": "Approved customization; not established by the source baseline.",
+      "implementationNote": "Prisma multi-schema models and six migrations in the unexposed postiz schema; application restore drill passed locally.",
+      "validationStatus": "local_checks_passed"
+    },
+    {
+      "id": "supabase-storage",
+      "name": "Private media, resumable uploads and signed delivery",
+      "phase": 1,
+      "implementation": "implemented_local",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/README.md"
+      ],
+      "notes": "Approved customization; not established by the source baseline.",
+      "implementationNote": "Private signed TUS uploads, MIME/size validation, immutable sealed objects, tenant-authorized signed downloads and processing/clipping adapters. Paid processing not activated.",
+      "validationStatus": "local_checks_passed"
+    },
+    {
+      "id": "agency-brands",
+      "name": "Agency administration and brand organizations",
+      "phase": 1,
+      "implementation": "implemented_local",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/README.md"
+      ],
+      "notes": "Approved customization; not established by the source baseline.",
+      "implementationNote": "Agency groups, assigned brand organizations, admin brand creation and Toronto timezone policy.",
+      "validationStatus": "local_checks_passed"
+    },
+    {
+      "id": "client-reviewer",
+      "name": "Staff membership and client-reviewer permissions",
+      "phase": 1,
+      "implementation": "implemented_local",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/README.md"
+      ],
+      "notes": "Approved customization; not established by the source baseline.",
+      "implementationNote": "Staff roles, client-only reviews/reports, invitations and revocation; HTTP tenant isolation tested.",
+      "validationStatus": "local_checks_passed"
+    },
+    {
+      "id": "enforced-approvals",
+      "name": "Versioned approval gates at scheduling and delivery",
+      "phase": 1,
+      "implementation": "implemented_local",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/README.md"
+      ],
+      "notes": "Approved customization; not established by the source baseline.",
+      "implementationNote": "Versioned content/media/settings/destination/time snapshots and backend/Temporal publish gates; serialized edits, invalidation and uncertain-delivery reconciliation.",
+      "validationStatus": "local_checks_passed"
+    },
+    {
+      "id": "readiness",
+      "name": "Separate implementation, credentials, approval and live status",
+      "phase": 1,
+      "implementation": "partial",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/README.md"
+      ],
+      "notes": "Approved customization; not established by the source baseline.",
+      "implementationNote": "Connection readiness, provider inventory and separate credentials/approval/live status; no network has live verification.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "calendar",
+      "name": "Day/week/month/list calendar",
+      "phase": 2,
+      "implementation": "inherited_unverified",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/general/calendar/overview"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "composer",
+      "name": "Shared copy and per-channel variants",
+      "phase": 2,
+      "implementation": "inherited_unverified",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/general/composer/global-vs-per-channel"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "previews",
+      "name": "Post and channel previews",
+      "phase": 2,
+      "implementation": "inherited_unverified",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/general/posts/actions-and-stats"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "schedule",
+      "name": "Draft, immediate, scheduled and repeating posts",
+      "phase": 2,
+      "implementation": "partial",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/general/composer/scheduling"
+      ],
+      "notes": "",
+      "implementationNote": "Inherited scheduling with V113 approval/ledger gates, local DST and recovery tests. Live delivery and full Temporal end-to-end faults pending.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "threads",
+      "name": "Threads, first comments and delays",
+      "phase": 2,
+      "implementation": "inherited_unverified",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/general/composer/threads-and-comments"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "media-library",
+      "name": "Searchable uploaded media library",
+      "phase": 2,
+      "implementation": "inherited_unverified",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/general/media-library"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "reusables",
+      "name": "Sets, signatures and channel selections",
+      "phase": 2,
+      "implementation": "inherited_unverified",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/general/settings/reusables"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "rss",
+      "name": "RSS-triggered content generation",
+      "phase": 2,
+      "implementation": "inherited_unverified",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/general/automations/auto-post-rss"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "plugs",
+      "name": "Milestone-triggered Postiz plugs",
+      "phase": 2,
+      "implementation": "inherited_unverified",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/general/automations/plugs"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "webhooks",
+      "name": "Publication webhooks",
+      "phase": 2,
+      "implementation": "inherited_unverified",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/general/automations/webhooks"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "api",
+      "name": "Publishing and channel-management API",
+      "phase": 2,
+      "implementation": "partial",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/general/settings/developers"
+      ],
+      "notes": "",
+      "implementationNote": "REST preserved with brand isolation and approval enforcement. API scheduling rejection checked locally; full contract suite pending.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "cli-mcp",
+      "name": "CLI/MCP and AI-agent integration surfaces",
+      "phase": 2,
+      "implementation": "partial",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/general/agents"
+      ],
+      "notes": "",
+      "implementationNote": "Inherited CLI/MCP retained, absolute backend OAuth URLs and current-membership checks adapted; external client smoke tests pending.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "notifications",
+      "name": "Publishing notifications and connection refresh",
+      "phase": 2,
+      "implementation": "inherited_unverified",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/general/channels/manage"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "bulk-import",
+      "name": "Bulk scheduling and CSV imports",
+      "phase": 2,
+      "implementation": "implemented_local",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/planner/"
+      ],
+      "notes": "Inherited equivalence requires verification.",
+      "implementationNote": "Quoted CSV preview, ordered brand-owned media, draft-only commit, deterministic row IDs and leased restart recovery.",
+      "validationStatus": "local_checks_passed"
+    },
+    {
+      "id": "queues",
+      "name": "Automated reusable content queues",
+      "phase": 2,
+      "implementation": "partial",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/planner/"
+      ],
+      "notes": "Repeating posts are inherited; autolist equivalence requires verification.",
+      "implementationNote": "Recurring posts and CSV repeat intervals are available; ordered evergreen category queues remain to implement.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "post-library",
+      "name": "Saved posts and reusable templates",
+      "phase": 2,
+      "implementation": "partial",
+      "credentialStatus": "not_applicable",
+      "approvalStatus": "not_applicable",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/planner/"
+      ],
+      "notes": "Signatures alone do not establish a complete post library.",
+      "implementationNote": "Inherited sets/signatures are available; a dedicated searchable reusable-post template library remains to implement.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "native-analytics",
+      "name": "Existing provider-native account and post analytics",
+      "phase": 3,
+      "implementation": "inherited_unverified",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/general/analytics"
+      ],
+      "notes": "Method declarations identify source evidence only; metrics are not live-verified."
+    },
+    {
+      "id": "analytics-history",
+      "name": "Historical metric storage and period comparisons",
+      "phase": 3,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/metricoolanalytics/"
+      ],
+      "notes": "",
+      "implementationNote": "Native account/post series are persisted with definitions and collection timestamps. Broader metric dictionaries and comparison UI remain.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "audiences",
+      "name": "Audience and format performance analysis",
+      "phase": 3,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/metricoolanalytics/"
+      ],
+      "notes": "",
+      "implementationNote": "Inherited provider-native series are retained; demographic and format analysis needs additional approved adapters and UI.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "hashtags",
+      "name": "Hashtag discovery and performance analysis",
+      "phase": 3,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/metricoolanalytics/"
+      ],
+      "notes": "",
+      "implementationNote": "Owned-post hashtag counts are available; network hashtag discovery and benchmark search remain.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "competitors",
+      "name": "Competitor tracking and benchmarking",
+      "phase": 3,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/metricoolanalytics/"
+      ],
+      "notes": "",
+      "implementationNote": "Watchlists plus Bluesky/YouTube public collectors; additional permitted network collectors and broad benchmarking remain.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "best-times",
+      "name": "Best publishing times from available history",
+      "phase": 3,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/planner/"
+      ],
+      "notes": "",
+      "implementationNote": "History-based recommendations require at least five measured posts; per-network statistical validation pending.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "campaign-dashboards",
+      "name": "Organic and paid campaign dashboards",
+      "phase": 3,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/customized-social-media-reports/"
+      ],
+      "notes": "",
+      "implementationNote": "Organic/post summaries and separate ad-account campaign data exist; unified campaign tagging and attribution remain.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "website-tracker",
+      "name": "Website/blog tracking and real-time traffic",
+      "phase": 3,
+      "implementation": "implemented_local",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/web-and-blog-statistics/"
+      ],
+      "notes": "",
+      "implementationNote": "First-party beacon, registered-origin checks, daily anonymous visitor hashes, page/referrer totals and a recent visitor view. Production traffic verification pending.",
+      "validationStatus": "local_checks_passed"
+    },
+    {
+      "id": "report-files",
+      "name": "Branded PDF/PowerPoint reports and CSV exports",
+      "phase": 3,
+      "implementation": "implemented_local",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/customized-social-media-reports/"
+      ],
+      "notes": "",
+      "implementationNote": "Branded PDF/PowerPoint and formula-safe CSV export, private brand-owned logo and multi-page export QA.",
+      "validationStatus": "local_checks_passed"
+    },
+    {
+      "id": "scheduled-reports",
+      "name": "Scheduled reports and email delivery",
+      "phase": 3,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/customized-social-media-reports/"
+      ],
+      "notes": "",
+      "implementationNote": "Temporal monthly report snapshots and email workflow implemented; hosted email delivery and restart smoke test pending.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "report-templates",
+      "name": "Reusable brand report templates",
+      "phase": 3,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/customized-social-media-reports/"
+      ],
+      "notes": "",
+      "implementationNote": "Saved report definitions with branding and rolling periods; richer reusable report layouts remain.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "ai-reports",
+      "name": "AI-assisted reporting and analysis",
+      "phase": 3,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/es/metricool-studio/"
+      ],
+      "notes": "",
+      "implementationNote": "Responses API summaries from collected measurements with store:false; disabled without a key and no paid calls made.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "shareable-dashboards",
+      "name": "Shareable reports and live dashboard links",
+      "phase": 3,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/es/metricool-studio/"
+      ],
+      "notes": "",
+      "implementationNote": "Expiring revocable report URLs with live latest measurements and exports; configurable dashboard widgets remain.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "looker",
+      "name": "Looker Studio connector",
+      "phase": 3,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/customized-social-media-reports/"
+      ],
+      "notes": "",
+      "implementationNote": "Read-only revocable brand metric keys plus Apps Script connector source; Apps Script deployment and live Looker verification pending.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "unified-inbox",
+      "name": "Unified direct-message and comments inbox",
+      "phase": 4,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/social-media-inbox/"
+      ],
+      "notes": "Existing reply helpers do not establish a unified inbox or event-driven flow engine.",
+      "implementationNote": "Normalized conversations/messages with deduplication, native adapters for Meta, YouTube, X, LinkedIn comments, Google Business reviews and TikTok Business comments. Other supported message surfaces remain pending.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "inbox-replies",
+      "name": "Replies through supported channels",
+      "phase": 4,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/social-media-inbox/"
+      ],
+      "notes": "Existing reply helpers do not establish a unified inbox or event-driven flow engine.",
+      "implementationNote": "Native comment/DM/review replies with request IDs and uncertain-send status; live permissions and per-network smoke tests pending.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "inbox-assignment",
+      "name": "Conversation assignments, notes and status",
+      "phase": 4,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/social-media-inbox/"
+      ],
+      "notes": "Existing reply helpers do not establish a unified inbox or event-driven flow engine.",
+      "implementationNote": "Assigned active staff and conversation state implemented; internal conversation notes remain.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "saved-replies",
+      "name": "Reusable reply snippets",
+      "phase": 4,
+      "implementation": "implemented_local",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/social-media-inbox/"
+      ],
+      "notes": "Existing reply helpers do not establish a unified inbox or event-driven flow engine.",
+      "implementationNote": "Brand-scoped reusable reply snippets with backend staff authorization.",
+      "validationStatus": "local_checks_passed"
+    },
+    {
+      "id": "flows",
+      "name": "Keyword-triggered comment and DM flows",
+      "phase": 4,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/flows/"
+      ],
+      "notes": "Existing reply helpers do not establish a unified inbox or event-driven flow engine.",
+      "implementationNote": "Keyword comment/DM flows, Unicode word matching, post filters, outbound suppression and idempotent execution claims; advanced branching remains.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "flow-analytics",
+      "name": "Flow execution history and results",
+      "phase": 4,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/flows/"
+      ],
+      "notes": "Existing reply helpers do not establish a unified inbox or event-driven flow engine.",
+      "implementationNote": "Execution history and outcome counts implemented; richer conversion/performance attribution remains.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "smartlinks",
+      "name": "Branded link-in-bio pages",
+      "phase": 5,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/socialmedia-smartlinks/"
+      ],
+      "notes": "",
+      "implementationNote": "Published branded link pages and editable HTTPS destinations; advanced visual layouts and commerce embeds remain.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "link-analytics",
+      "name": "Link click and click-through analytics",
+      "phase": 5,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/socialmedia-smartlinks/"
+      ],
+      "notes": "",
+      "implementationNote": "Per-link tracked redirects and click totals; impression-based click-through rates and bot filtering remain.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "ads-meta",
+      "name": "Meta Ads reporting and campaign management",
+      "phase": 5,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/manage-online-campaigns-metricool/"
+      ],
+      "notes": "",
+      "implementationNote": "Encrypted account setup, performance snapshots, PAUSED traffic campaign creation and campaign status/budget updates. Ad sets, creatives, targeting and token-refresh onboarding remain.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "ads-google",
+      "name": "Google Ads reporting and campaign management",
+      "phase": 5,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/manage-online-campaigns-metricool/"
+      ],
+      "notes": "",
+      "implementationNote": "Cloud-project API onboarding, v26 reporting and PAUSED traffic campaign budgets/status. Ad groups, assets/keywords and full campaign creation parity remain.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "ads-tiktok",
+      "name": "TikTok Ads reporting and campaign management",
+      "phase": 5,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/manage-online-campaigns-metricool/"
+      ],
+      "notes": "",
+      "implementationNote": "Advertiser reporting, disabled traffic campaign creation and status/budget changes. Ad groups, creatives and full targeting parity remain.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "external-design",
+      "name": "Canva/Adobe Express and external media workflows",
+      "phase": 5,
+      "implementation": "planned",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://metricool.com/integrations/"
+      ],
+      "notes": "",
+      "implementationNote": "Canva, Adobe Express and Drive developer access/onboarding and native editing/import workflows remain.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "design-editor",
+      "name": "Licensed Polotno visual editor",
+      "phase": 5,
+      "implementation": "inherited_unverified",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/self-host/configuration/polotno"
+      ],
+      "notes": "Requires keys/licenses and compatibility verification with private Supabase storage.",
+      "implementationNote": "Inherited Polotno editor retained; commercial license and licensed-flow validation pending.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "ai-content",
+      "name": "AI text, images and video generation",
+      "phase": 5,
+      "implementation": "inherited_unverified",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/general/composer/ai-and-imports"
+      ],
+      "notes": "Requires keys/licenses and compatibility verification with private Supabase storage.",
+      "implementationNote": "Inherited text/image/video creation retained with pending-activation UI; provider keys, limits and paid tests pending.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "video-clipping",
+      "name": "Video clipping and captioned outputs",
+      "phase": 5,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/self-host/configuration/clipping"
+      ],
+      "notes": "Requires keys/licenses and compatibility verification with private Supabase storage.",
+      "implementationNote": "Inherited clipping adapted to Supabase signing/sealing with owned thumbnail records; RunPod/Deepgram deployment and paid end-to-end checks pending.",
+      "validationStatus": "partial_or_pending"
+    },
+    {
+      "id": "third-party-media",
+      "name": "Third-party generated media ingestion",
+      "phase": 5,
+      "implementation": "inherited_unverified",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "sources": [
+        "https://docs.postiz.com/general/automations/third-party"
+      ],
+      "notes": "Requires keys/licenses and compatibility verification with private Supabase storage."
+    }
+  ],
+  "providers": [
+    {
+      "id": "bluesky",
+      "name": "Bluesky",
+      "phase": 2,
+      "benchmarks": [
+        "postiz",
+        "metricool"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "credentials",
+      "developerAppRequired": false,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_required",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [],
+      "callbackPath": null,
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/bluesky.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/bluesky.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [],
+      "requestedScopesDeclared": [
+        "write:statuses",
+        "profile",
+        "write:media"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "devto",
+      "name": "Dev.to",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "credentials",
+      "developerAppRequired": false,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_required",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [],
+      "callbackPath": null,
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/dev.to.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/dev.to.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [
+        "Public guide labels this API-only; verify the actual visible connection flow."
+      ],
+      "requestedScopesDeclared": [],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "discord",
+      "name": "Discord",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "DISCORD_BOT_TOKEN_ID",
+        "DISCORD_CLIENT_ID",
+        "DISCORD_CLIENT_SECRET"
+      ],
+      "callbackPath": "/integrations/social/discord",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/discord.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/discord.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [],
+      "requestedScopesDeclared": [
+        "identify",
+        "guilds"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "dribbble",
+      "name": "Dribbble",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "DRIBBBLE_CLIENT_ID",
+        "DRIBBBLE_CLIENT_SECRET",
+        "PINTEREST_CLIENT_ID",
+        "PINTEREST_CLIENT_SECRET"
+      ],
+      "callbackPath": "/integrations/social/dribbble",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/dribbble.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/dribbble.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": true,
+      "notes": [
+        "Inherited refresh-token code references Pinterest credentials and callback; audit before activating."
+      ],
+      "requestedScopesDeclared": [
+        "public",
+        "upload"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "facebook",
+      "name": "Facebook Page",
+      "phase": 2,
+      "benchmarks": [
+        "postiz",
+        "metricool"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "FACEBOOK_APP_ID",
+        "FACEBOOK_APP_SECRET"
+      ],
+      "callbackPath": "/integrations/social/facebook",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/facebook.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/facebook.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": true,
+      "postAnalyticsMethodDeclared": true,
+      "notes": [],
+      "requestedScopesDeclared": [
+        "pages_show_list",
+        "business_management",
+        "pages_manage_posts",
+        "pages_manage_engagement",
+        "pages_read_engagement",
+        "read_insights"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "wrapcast",
+      "name": "Farcaster",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "in_app",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "NEYNAR_APP_FID",
+        "NEYNAR_APP_MNEMONIC",
+        "NEYNAR_CLIENT_ID",
+        "NEYNAR_SECRET_KEY",
+        "NEYNAR_SPONSOR_SIGNERS"
+      ],
+      "callbackPath": null,
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/farcaster.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/farcaster.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [],
+      "requestedScopesDeclared": [],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "gmb",
+      "name": "Google My Business",
+      "phase": 2,
+      "benchmarks": [
+        "postiz",
+        "metricool"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "GOOGLE_GMB_CLIENT_ID",
+        "GOOGLE_GMB_CLIENT_SECRET",
+        "YOUTUBE_CLIENT_ID",
+        "YOUTUBE_CLIENT_SECRET"
+      ],
+      "callbackPath": "/integrations/social/gmb",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/gmb.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/gmb.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": true,
+      "postAnalyticsMethodDeclared": true,
+      "notes": [],
+      "requestedScopesDeclared": [
+        "https://www.googleapis.com/auth/userinfo.profile",
+        "https://www.googleapis.com/auth/userinfo.email",
+        "https://www.googleapis.com/auth/business.manage"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "hashnode",
+      "name": "Hashnode",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "credentials",
+      "developerAppRequired": false,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_required",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [],
+      "callbackPath": null,
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/hashnode.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/hashnode.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [
+        "Public guide labels this API-only; verify the actual visible connection flow."
+      ],
+      "requestedScopesDeclared": [],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "instagram",
+      "name": "Instagram (Facebook Business)",
+      "phase": 2,
+      "benchmarks": [
+        "postiz",
+        "metricool"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "FACEBOOK_APP_ID",
+        "FACEBOOK_APP_SECRET"
+      ],
+      "callbackPath": "/integrations/social/instagram",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/instagram.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/instagram.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": true,
+      "postAnalyticsMethodDeclared": true,
+      "notes": [],
+      "requestedScopesDeclared": [
+        "instagram_basic",
+        "pages_show_list",
+        "pages_read_engagement",
+        "business_management",
+        "instagram_content_publish",
+        "instagram_manage_comments",
+        "instagram_manage_insights"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "instagram-standalone",
+      "name": "Instagram (Standalone)",
+      "phase": 2,
+      "benchmarks": [
+        "postiz",
+        "metricool"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "INSTAGRAM_APP_ID",
+        "INSTAGRAM_APP_SECRET"
+      ],
+      "callbackPath": "/integrations/social/instagram-standalone",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/instagram.standalone.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/instagram.standalone.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": true,
+      "postAnalyticsMethodDeclared": true,
+      "notes": [],
+      "requestedScopesDeclared": [
+        "instagram_business_basic",
+        "instagram_business_content_publish",
+        "instagram_business_manage_comments",
+        "instagram_business_manage_insights"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "kick",
+      "name": "Kick",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "KICK_CLIENT_ID",
+        "KICK_SECRET"
+      ],
+      "callbackPath": "/integrations/social/kick",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/kick.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/kick.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [
+        "Public guide labels this API-only; verify the actual visible connection flow."
+      ],
+      "requestedScopesDeclared": [
+        "chat:write",
+        "user:read",
+        "channel:read"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "lemmy",
+      "name": "Lemmy",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "credentials",
+      "developerAppRequired": false,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_required",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [],
+      "callbackPath": null,
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/lemmy.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/lemmy.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [
+        "Public guide labels this API-only; verify the actual visible connection flow."
+      ],
+      "requestedScopesDeclared": [],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "linkedin-page",
+      "name": "LinkedIn Page",
+      "phase": 2,
+      "benchmarks": [
+        "postiz",
+        "metricool"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "LINKEDIN_CLIENT_ID",
+        "LINKEDIN_CLIENT_SECRET"
+      ],
+      "callbackPath": "/integrations/social/linkedin-page",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/linkedin.page.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/linkedin.page.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": true,
+      "postAnalyticsMethodDeclared": true,
+      "notes": [],
+      "requestedScopesDeclared": [
+        "openid",
+        "profile",
+        "w_member_social",
+        "r_basicprofile",
+        "rw_organization_admin",
+        "w_organization_social",
+        "r_organization_social"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "linkedin",
+      "name": "LinkedIn",
+      "phase": 2,
+      "benchmarks": [
+        "postiz",
+        "metricool"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "LINKEDIN_CLIENT_ID",
+        "LINKEDIN_CLIENT_SECRET"
+      ],
+      "callbackPath": "/integrations/social/linkedin",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/linkedin.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/linkedin.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [],
+      "requestedScopesDeclared": [
+        "openid",
+        "profile",
+        "w_member_social",
+        "r_basicprofile",
+        "rw_organization_admin",
+        "w_organization_social",
+        "r_organization_social"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "listmonk",
+      "name": "ListMonk",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "credentials",
+      "developerAppRequired": false,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_required",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [],
+      "callbackPath": null,
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/listmonk.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/listmonk.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [
+        "Public guide labels this API-only; verify the actual visible connection flow."
+      ],
+      "requestedScopesDeclared": [],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "mastodon-custom",
+      "name": "M. Instance",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inactive_upstream",
+      "registered": false,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [],
+      "callbackPath": "/integrations/social/mastodon-custom",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/mastodon.custom.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/mastodon.custom.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [
+        "Source variant exists but registration is commented out."
+      ],
+      "requestedScopesDeclared": [],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "mastodon",
+      "name": "Mastodon",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "MASTODON_CLIENT_ID",
+        "MASTODON_CLIENT_SECRET"
+      ],
+      "callbackPath": "/integrations/social/mastodon",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/mastodon.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/mastodon.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [],
+      "requestedScopesDeclared": [
+        "write:statuses",
+        "profile",
+        "write:media"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "medium",
+      "name": "Medium",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "credentials",
+      "developerAppRequired": false,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_required",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [],
+      "callbackPath": null,
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/medium.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/medium.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [
+        "Public guide labels this API-only; verify the actual visible connection flow."
+      ],
+      "requestedScopesDeclared": [],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "mewe",
+      "name": "MeWe",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "MEWE_API_KEY",
+        "MEWE_APP_ID"
+      ],
+      "callbackPath": "/integrations/social/mewe",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/mewe.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/mewe.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [],
+      "requestedScopesDeclared": [],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "moltbook",
+      "name": "Moltbook",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "in_app",
+      "developerAppRequired": false,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_required",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [],
+      "callbackPath": null,
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/moltbook.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/moltbook.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [
+        "Public guide labels this API-only; verify the actual visible connection flow."
+      ],
+      "requestedScopesDeclared": [],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "nostr",
+      "name": "Nostr",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "credentials",
+      "developerAppRequired": false,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_required",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [],
+      "callbackPath": null,
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/nostr.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/nostr.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [
+        "Public guide labels this API-only; verify the actual visible connection flow."
+      ],
+      "requestedScopesDeclared": [],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "pinterest",
+      "name": "Pinterest",
+      "phase": 2,
+      "benchmarks": [
+        "postiz",
+        "metricool"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "PINTEREST_CLIENT_ID",
+        "PINTEREST_CLIENT_SECRET"
+      ],
+      "callbackPath": "/integrations/social/pinterest",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/pinterest.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/pinterest.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": true,
+      "postAnalyticsMethodDeclared": true,
+      "notes": [],
+      "requestedScopesDeclared": [
+        "boards:read",
+        "boards:write",
+        "pins:read",
+        "pins:write",
+        "user_accounts:read"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "reddit",
+      "name": "Reddit",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "REDDIT_CLIENT_ID",
+        "REDDIT_CLIENT_SECRET"
+      ],
+      "callbackPath": "/integrations/social/reddit",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/reddit.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/reddit.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [],
+      "requestedScopesDeclared": [
+        "read",
+        "identity",
+        "submit",
+        "flair"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "skool",
+      "name": "Skool",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "browser_extension",
+      "developerAppRequired": false,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_required",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [],
+      "callbackPath": null,
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/skool.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/skool.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [],
+      "requestedScopesDeclared": [],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "slack",
+      "name": "Slack",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "SLACK_ID",
+        "SLACK_SECRET"
+      ],
+      "callbackPath": "/integrations/social/slack",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/slack.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/slack.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [],
+      "requestedScopesDeclared": [
+        "channels:read",
+        "chat:write",
+        "users:read",
+        "channels:join",
+        "chat:write.customize"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "telegram",
+      "name": "Telegram",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "in_app",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_required",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "TELEGRAM_TOKEN"
+      ],
+      "callbackPath": null,
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/telegram.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/telegram.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [],
+      "requestedScopesDeclared": [],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "threads",
+      "name": "Threads",
+      "phase": 2,
+      "benchmarks": [
+        "postiz",
+        "metricool"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "THREADS_APP_ID",
+        "THREADS_APP_SECRET"
+      ],
+      "callbackPath": "/integrations/social/threads",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/threads.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/threads.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": true,
+      "postAnalyticsMethodDeclared": true,
+      "notes": [],
+      "requestedScopesDeclared": [
+        "threads_basic",
+        "threads_content_publish",
+        "threads_manage_replies",
+        "threads_manage_insights",
+        "threads_profile_discovery"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "tiktok-business",
+      "name": "TikTok",
+      "phase": 2,
+      "benchmarks": [
+        "postiz",
+        "metricool"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "TIKTOK_BUSINESS_CLIENT_ID",
+        "TIKTOK_BUSINESS_CLIENT_SECRET"
+      ],
+      "callbackPath": "/integrations/social/tiktok-business/",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/tiktok.business.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/tiktok.business.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": true,
+      "postAnalyticsMethodDeclared": true,
+      "notes": [],
+      "requestedScopesDeclared": [
+        "user.info.basic",
+        "user.info.username",
+        "user.info.stats",
+        "video.list",
+        "video.upload",
+        "video.publish"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "tiktok",
+      "name": "Tiktok",
+      "phase": 2,
+      "benchmarks": [
+        "postiz",
+        "metricool"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "TIKTOK_CLIENT_ID",
+        "TIKTOK_CLIENT_SECRET"
+      ],
+      "callbackPath": "/integrations/social/tiktok",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/tiktok.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/tiktok.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": true,
+      "postAnalyticsMethodDeclared": true,
+      "notes": [
+        "TikTok Direct Post rules restrict internal/private utilities. Public activation depends on an eligible approved application; upload-to-inbox is a distinct manual-completion mode."
+      ],
+      "requestedScopesDeclared": [
+        "video.list",
+        "user.info.basic",
+        "video.publish",
+        "video.upload",
+        "user.info.profile",
+        "user.info.stats"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "tumblr",
+      "name": "Tumblr",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "TUMBLR_CLIENT_ID",
+        "TUMBLR_CLIENT_SECRET"
+      ],
+      "callbackPath": "/integrations/social/tumblr",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/tumblr.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/tumblr.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [],
+      "requestedScopesDeclared": [
+        "write",
+        "offline_access"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "twitch",
+      "name": "Twitch",
+      "phase": 2,
+      "benchmarks": [
+        "postiz",
+        "metricool"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "TWITCH_CLIENT_ID",
+        "TWITCH_CLIENT_SECRET"
+      ],
+      "callbackPath": "/integrations/social/twitch",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/twitch.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/twitch.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [
+        "Public guide labels this API-only; verify the actual visible connection flow."
+      ],
+      "requestedScopesDeclared": [
+        "user:write:chat",
+        "user:read:chat",
+        "moderator:manage:announcements"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "vk",
+      "name": "VK",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "VK_ID"
+      ],
+      "callbackPath": "/integrations/social/vk",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/vk.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/vk.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [
+        "Public guide labels this API-only; verify the actual visible connection flow."
+      ],
+      "requestedScopesDeclared": [
+        "vkid.personal_info",
+        "email",
+        "wall",
+        "status",
+        "docs",
+        "photos",
+        "video"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "whop",
+      "name": "Whop",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "WHOP_CLIENT_ID"
+      ],
+      "callbackPath": "/integrations/social/whop",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/whop.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/whop.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [],
+      "requestedScopesDeclared": [
+        "openid",
+        "profile",
+        "email",
+        "forum:post:create",
+        "forum:read",
+        "company:basic:read"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "wordpress",
+      "name": "WordPress",
+      "phase": 2,
+      "benchmarks": [
+        "postiz"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "credentials",
+      "developerAppRequired": false,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_required",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [],
+      "callbackPath": null,
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/wordpress.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/wordpress.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": false,
+      "postAnalyticsMethodDeclared": false,
+      "notes": [
+        "Public guide labels this API-only; verify the actual visible connection flow."
+      ],
+      "requestedScopesDeclared": [],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "x",
+      "name": "X",
+      "phase": 2,
+      "benchmarks": [
+        "postiz",
+        "metricool"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "X_API_KEY",
+        "X_API_SECRET"
+      ],
+      "callbackPath": "/integrations/social/x",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/x.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/x.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": true,
+      "postAnalyticsMethodDeclared": true,
+      "notes": [
+        "Uses OAuth 1.0a; empty OAuth scope array does not mean read/write access is unnecessary."
+      ],
+      "requestedScopesDeclared": [],
+      "contractTestStatus": "registry_coverage_only"
+    },
+    {
+      "id": "youtube",
+      "name": "YouTube",
+      "phase": 2,
+      "benchmarks": [
+        "postiz",
+        "metricool"
+      ],
+      "implementation": "inherited_unverified",
+      "registered": true,
+      "connectionMethod": "oauth",
+      "developerAppRequired": true,
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "credentialEnvironmentVariables": [
+        "YOUTUBE_CLIENT_ID",
+        "YOUTUBE_CLIENT_SECRET"
+      ],
+      "callbackPath": "/integrations/social/youtube",
+      "sourceFile": "libraries/nestjs-libraries/src/integrations/social/youtube.provider.ts",
+      "sources": [
+        "https://github.com/gitroomhq/postiz-app/blob/2f24e10f2204295f66a1999679e9896db3cb2094/libraries/nestjs-libraries/src/integrations/social/youtube.provider.ts",
+        "https://docs.postiz.com/general/platforms/overview"
+      ],
+      "accountAnalyticsMethodDeclared": true,
+      "postAnalyticsMethodDeclared": true,
+      "notes": [],
+      "requestedScopesDeclared": [
+        "https://www.googleapis.com/auth/userinfo.profile",
+        "https://www.googleapis.com/auth/userinfo.email",
+        "https://www.googleapis.com/auth/youtube",
+        "https://www.googleapis.com/auth/youtube.force-ssl",
+        "https://www.googleapis.com/auth/youtube.readonly",
+        "https://www.googleapis.com/auth/youtube.upload",
+        "https://www.googleapis.com/auth/youtubepartner",
+        "https://www.googleapis.com/auth/yt-analytics.readonly"
+      ],
+      "contractTestStatus": "registry_coverage_only"
+    }
+  ],
+  "additionalIntegrations": [
+    {
+      "id": "meta-ads",
+      "name": "Meta Ads",
+      "phase": 5,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified"
+    },
+    {
+      "id": "google-ads",
+      "name": "Google Ads",
+      "phase": 5,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified",
+      "notes": "As of 2026-11-19, access is associated with Google Cloud projects; new developer tokens are no longer required."
+    },
+    {
+      "id": "tiktok-ads",
+      "name": "TikTok Ads",
+      "phase": 5,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified"
+    },
+    {
+      "id": "website-tracker",
+      "name": "Website/blog tracker",
+      "phase": 3,
+      "implementation": "implemented_local",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_required",
+      "liveVerificationStatus": "not_verified"
+    },
+    {
+      "id": "looker-studio",
+      "name": "Looker Studio",
+      "phase": 3,
+      "implementation": "partial",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified"
+    },
+    {
+      "id": "canva",
+      "name": "Canva",
+      "phase": 5,
+      "implementation": "planned",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified"
+    },
+    {
+      "id": "adobe-express",
+      "name": "Adobe Express",
+      "phase": 5,
+      "implementation": "planned",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified"
+    },
+    {
+      "id": "google-drive",
+      "name": "Google Drive media import",
+      "phase": 5,
+      "implementation": "planned",
+      "credentialStatus": "not_configured",
+      "approvalStatus": "not_requested",
+      "liveVerificationStatus": "not_verified"
+    }
+  ],
+  "releaseVerification": {
+    "localDate": "2026-11-19",
+    "hostedDeployment": "pending_account_configuration",
+    "networkLiveTests": "not_run_no_developer_apps",
+    "capacity": "not_validated_on_target_host",
+    "backup": "local_application_schema_private_object_and_Temporal_persistence_visibility_restore_drills_passed; hosted_Auth_and_full_environment_DR_pending",
+    "frontend": "production_build_and_desktop_mobile_browser_checks_passed",
+    "automatedTests": "68_unit_database_and_adapter_tests_passed; local_HTTP_smoke_suite_passed"
+  }
+}

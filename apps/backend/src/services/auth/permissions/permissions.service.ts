@@ -39,13 +39,18 @@ export class PermissionsService {
   async check(
     orgId: string,
     created_at: Date,
-    permission: 'USER' | 'ADMIN' | 'SUPERADMIN',
+    permission: 'USER' | 'ADMIN' | 'SUPERADMIN' | 'REVIEWER',
     requestedPermission: Array<[AuthorizationActions, Sections]>,
     refreshChannelId?: string
   ) {
     const { can, build } = new AbilityBuilder<
       Ability<[AuthorizationActions, Sections]>
     >(Ability as AbilityClass<AppAbility>);
+
+    // Roles apply on self-hosted installs as well as billed installs.
+    if (permission === 'REVIEWER') return build();
+    if (requestedPermission.some(([_, section]) => section === Sections.ADMIN) &&
+      !['ADMIN', 'SUPERADMIN'].includes(permission)) return build();
 
     if (
       requestedPermission.length === 0 ||

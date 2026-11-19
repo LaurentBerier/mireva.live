@@ -70,7 +70,7 @@ export const getTemporalModule = (
                   activityClasses: activityClasses!,
                   autoStart: true,
                   workerOptions: {
-                    maxConcurrentActivityTaskExecutions: concurrency || 1000000,
+                    maxConcurrentActivityTaskExecutions: Math.min(concurrency || 1000000, Math.max(1, Number(process.env.WORKER_ACTIVITY_CONCURRENCY) || 1000000)),
                     // By default the SDK throttles heartbeat sends to 60s, so
                     // against the workflow's heartbeatTimeout one dropped send
                     // or a minute of event-loop lag eats most of the margin.

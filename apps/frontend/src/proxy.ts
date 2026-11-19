@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { getCookieUrlFromDomain } from '@gitroom/helpers/subdomain/subdomain.management';
 import { internalFetch } from '@gitroom/helpers/utils/internal.fetch';
 import acceptLanguage from 'accept-language';
+import { supabaseProxy } from '@gitroom/frontend/lib/supabase/proxy';
 import {
   cookieName,
   headerName,
@@ -12,6 +13,7 @@ acceptLanguage.languages(languages);
 
 // This function can be marked `async` if using `await` inside
 export async function proxy(request: NextRequest) {
+  if (process.env.AUTH_PROVIDER === 'supabase') return supabaseProxy(request);
   const nextUrl = request.nextUrl;
   const authCookie =
     request.cookies.get('auth') ||

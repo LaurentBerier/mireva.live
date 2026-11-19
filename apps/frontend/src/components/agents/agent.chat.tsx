@@ -47,6 +47,8 @@ export const AgentChat: FC = () => {
   const { properties } = useContext(PropertiesContext);
   const t = useT();
 
+  if (process.env.NEXT_PUBLIC_AI_ENABLED !== 'true') return <div className="p-8"><h2 className="text-xl font-semibold">AI creation is pending activation</h2><p className="mt-3 opacity-70">Your agency administrator can enable this feature after configuring the AI provider and reviewing its usage costs.</p></div>;
+
   return (
     <CopilotKit
       {...(params.id === 'new' ? {} : { threadId: params.id })}

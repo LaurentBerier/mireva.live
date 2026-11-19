@@ -6,7 +6,8 @@ export class OAuthRepository {
   constructor(
     private _oauthApp: PrismaRepository<'oAuthApp'>,
     private _oauthAuth: PrismaRepository<'oAuthAuthorization'>,
-    private _oauthSelfHosted: PrismaRepository<'oAuthSelfHostedAuthorization'>
+    private _oauthSelfHosted: PrismaRepository<'oAuthSelfHostedAuthorization'>,
+    private readonly memberships: PrismaRepository<'userOrganization'>
   ) {}
 
   getAppByOrgId(orgId: string) {
@@ -228,11 +229,13 @@ export class OAuthRepository {
     });
   }
 
-  findByAccessToken(encryptedToken: string) {
-    return this._oauthAuth.model.oAuthAuthorization.findFirst({
+  async findByAccessToken(encryptedToken: string) {
+    const authorization = await this._oauthAuth.model.oAuthAuthorization.findFirst({
       where: {
         accessToken: encryptedToken,
         revokedAt: null,
+        user: { activated: true, deletedAt: null },
+        organization: { deletedAt: null },
       },
       include: {
         oauthApp: {
@@ -262,6 +265,12 @@ export class OAuthRepository {
         },
       },
     });
+    if (!authorization) return null;
+    const membership = await this.memberships.model.userOrganization.findUnique({ where: {
+      userId_organizationId: { userId: authorization.userId, organizationId: authorization.organizationId },
+    }, select: { role: true, disabled: true } });
+    if (!membership || membership.disabled || membership.role === 'REVIEWER') return null;
+    return authorization;
   }
 
   getApprovedApps(userId: string) {

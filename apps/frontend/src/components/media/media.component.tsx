@@ -1127,7 +1127,7 @@ export const MediaComponent: FC<{
         <div className="my-[20px] cursor-pointer w-[200px] h-[200px] border-2 border-tableBorder">
           <img
             className="w-full h-full object-cover"
-            src={currentMedia.path}
+            src={mediaDirectory.set(currentMedia.path)}
             onClick={() => window.open(mediaDirectory.set(currentMedia.path))}
           />
         </div>

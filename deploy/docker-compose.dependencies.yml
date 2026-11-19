@@ -1,0 +1,48 @@
+name: agency-workspace
+services:
+  redis:
+    image: redis:7.2-alpine
+    command: [redis-server, --appendonly, 'yes']
+    restart: unless-stopped
+    ports: ['127.0.0.1:56379:6379']
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  temporal-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: temporal
+      POSTGRES_PASSWORD: ${TEMPORAL_DB_PASSWORD:-local-temporal-password}
+    restart: unless-stopped
+    volumes: [temporal-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U temporal]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  temporal:
+    image: temporalio/auto-setup:1.28.1
+    restart: unless-stopped
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: temporal
+      POSTGRES_PWD: ${TEMPORAL_DB_PASSWORD:-local-temporal-password}
+      POSTGRES_SEEDS: temporal-db
+      ENABLE_ES: 'false'
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
+    depends_on:
+      temporal-db: { condition: service_healthy }
+    ports: ['127.0.0.1:57233:7233']
+    volumes: ['../dynamicconfig:/etc/temporal/config/dynamicconfig:ro']
+  temporal-ui:
+    image: temporalio/ui:2.34.0
+    environment: { TEMPORAL_ADDRESS: 'temporal:7233' }
+    depends_on: [temporal]
+    ports: ['127.0.0.1:58080:8080']
+volumes:
+  redis-data:
+  temporal-data:

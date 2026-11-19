@@ -1,0 +1,17 @@
+{
+  "timeZone": "America/Toronto",
+  "runtimeVersion": "V8",
+  "oauthScopes": ["https://www.googleapis.com/auth/script.external_request"],
+  "dataStudio": {
+    "name": "Agency social analytics",
+    "logoUrl": "https://YOUR-AGENCY-DOMAIN/logo.svg",
+    "company": "Your agency",
+    "companyUrl": "https://YOUR-AGENCY-DOMAIN",
+    "addonUrl": "https://YOUR-AGENCY-DOMAIN/agency",
+    "supportUrl": "https://YOUR-AGENCY-DOMAIN/agency",
+    "description": "Brand-scoped native social metrics collected by Agency Workspace.",
+    "sources": ["CUSTOM"],
+    "authType": ["KEY"],
+    "feeType": ["FREE"]
+  }
+}

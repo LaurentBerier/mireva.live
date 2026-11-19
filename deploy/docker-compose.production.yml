@@ -1,0 +1,122 @@
+name: agency-workspace-${DEPLOYMENT_ENVIRONMENT:-staging}
+services:
+  gateway:
+    image: caddy:2.11.9-alpine
+    restart: unless-stopped
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?Set the HTTPS API hostname}
+      ACME_EMAIL: ${ACME_EMAIL:?Set the certificate contact email}
+    ports: ['80:80', '443:443', '443:443/udp']
+    volumes: ['./Caddyfile:/etc/caddy/Caddyfile:ro', 'caddy-data:/data', 'caddy-config:/config']
+    depends_on: { backend: { condition: service_healthy } }
+    mem_limit: 128m
+    cpus: 0.25
+  backend:
+    image: agency-workspace:${RELEASE_TAG:?Set an immutable release tag}
+    build: { context: '..', dockerfile: deploy/Dockerfile }
+    restart: unless-stopped
+    env_file: ['../.env']
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=1024
+      REDIS_URL: redis://redis:6379
+      TEMPORAL_ADDRESS: temporal:7233
+      RUN_CRON: 'true'
+    depends_on:
+      redis: { condition: service_healthy }
+      temporal: { condition: service_healthy }
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/agency-public/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 120s
+      retries: 5
+    mem_limit: 1536m
+    cpus: 1.25
+  orchestrator:
+    image: agency-workspace:${RELEASE_TAG:?Set an immutable release tag}
+    command: [node, scripts/agency-run-service.cjs, orchestrator]
+    restart: unless-stopped
+    init: true
+    env_file: ['../.env']
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=1536
+      REDIS_URL: redis://redis:6379
+      TEMPORAL_ADDRESS: temporal:7233
+      WORKER_ACTIVITY_CONCURRENCY: '2'
+    depends_on:
+      redis: { condition: service_healthy }
+      temporal: { condition: service_healthy }
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3002/health/status').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 15s
+      start_period: 180s
+      retries: 5
+    stop_grace_period: 60s
+    mem_limit: 2560m
+    cpus: 2
+  prepare:
+    image: agency-workspace:${RELEASE_TAG:?Set an immutable release tag}
+    profiles: [tools]
+    command: [node, scripts/agency-prepare-temporal.mjs]
+    env_file: ['../.env']
+    environment: { TEMPORAL_ADDRESS: 'temporal:7233' }
+    depends_on: { temporal: { condition: service_healthy } }
+  migrate:
+    image: agency-workspace:${RELEASE_TAG:?Set an immutable release tag}
+    profiles: [tools]
+    command: [pnpm, run, 'agency:db:deploy']
+    env_file: ['../.env']
+  bootstrap:
+    image: agency-workspace:${RELEASE_TAG:?Set an immutable release tag}
+    profiles: [tools]
+    command: [node, scripts/agency-bootstrap.mjs]
+    env_file: ['../.env']
+  redis:
+    image: redis:7.2-alpine
+    restart: unless-stopped
+    command: [redis-server, --appendonly, 'yes', --maxmemory, 192mb, --maxmemory-policy, noeviction]
+    volumes: [redis-data:/data]
+    healthcheck: { test: [CMD, redis-cli, ping], interval: 10s, timeout: 3s, retries: 20 }
+    mem_limit: 256m
+    cpus: 0.25
+  temporal-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: temporal
+      POSTGRES_PASSWORD: ${TEMPORAL_DB_PASSWORD:?Set a unique Temporal database password}
+    volumes: [temporal-data:/var/lib/postgresql/data]
+    healthcheck: { test: [CMD-SHELL, pg_isready -U temporal], interval: 10s, timeout: 3s, retries: 20 }
+    mem_limit: 768m
+    cpus: 0.5
+  temporal:
+    image: temporalio/auto-setup:1.28.1
+    restart: unless-stopped
+    depends_on: { temporal-db: { condition: service_healthy } }
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: temporal
+      POSTGRES_PWD: ${TEMPORAL_DB_PASSWORD}
+      POSTGRES_SEEDS: temporal-db
+      ENABLE_ES: 'false'
+      DEFAULT_NAMESPACE: agency-workspace
+      SKIP_ADD_CUSTOM_SEARCH_ATTRIBUTES: 'true'
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/agency-production.yaml
+    volumes: ['../dynamicconfig:/etc/temporal/config/dynamicconfig:ro']
+    healthcheck:
+      test: [CMD, temporal, operator, cluster, health, --address, 'temporal:7233']
+      interval: 15s
+      timeout: 10s
+      start_period: 90s
+      retries: 20
+    mem_limit: 1536m
+    cpus: 1
+volumes:
+  redis-data:
+  temporal-data:
+  caddy-data:
+  caddy-config:

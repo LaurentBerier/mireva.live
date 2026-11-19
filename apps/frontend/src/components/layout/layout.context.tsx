@@ -24,10 +24,15 @@ export function setCookie(cname: string, cvalue: string, exdays: number) {
 }
 function LayoutContextInner(params: { children: ReactNode }) {
   const returnUrl = useReturnUrl();
-  const { backendUrl, isGeneral, isSecured } = useVariables();
+  const { backendUrl, isGeneral, isSecured, supabaseAuth } = useVariables();
   const decision = useDecisionModal();
   const afterRequest = useCallback(
     async (url: string, options: RequestInit, response: Response) => {
+      if (supabaseAuth && (response.status === 401 || response.headers.get('logout'))) {
+        await window.fetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        window.location.assign('/auth/login');
+        return true;
+      }
       if (
         typeof window !== 'undefined' &&
         (window.location.href.includes('/p/') ||
@@ -127,7 +132,7 @@ function LayoutContextInner(params: { children: ReactNode }) {
       }
       return true;
     },
-    []
+    [supabaseAuth, isGeneral, isSecured, returnUrl, decision]
   );
   return (
     <FetchWrapperComponent baseUrl={backendUrl} afterRequest={afterRequest}>

@@ -1,15 +1,39 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
   runtime  = "nodejs"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+  schemas = ["postiz"]
 }
 
 model Organization {
   id                  String               @id @default(uuid())
+  agencyId            String?
+  agency              AgencyWorkspace?     @relation(fields: [agencyId], references: [id])
+  timezoneName        String               @default("America/Toronto")
+  approvalRequired    Boolean              @default(false)
+  publicationFence    Int                  @default(0)
+  deliveryLeases      BrandDeliveryLease[]
+  deliveryAttempts    BrandDeliveryAttempt[]
+  analyticsKeys       BrandAnalyticsKey[]
+  imports             BrandImport[]
+  synchronizations    BrandSyncRun[]
+  reviewRequests      BrandReview[]
+  analyticsSnapshots  BrandMetric[]
+  competitorProfiles  BrandCompetitor[]
+  conversations       BrandConversation[]
+  savedReplies        BrandSavedReply[]
+  automationFlows     BrandFlow[]
+  linkPages           BrandLinkPage[]
+  websites            BrandWebsite[]
+  reports             BrandReport[]
+  adAccounts          BrandAdAccount[]
+  uploadTickets       BrandUploadTicket[]
   name                String
   description         String?
   apiKey              String?
@@ -50,6 +74,7 @@ model Organization {
   @@index([streakSince])
   @@index([paymentId])
   @@index([deletedAt])
+  @@schema("postiz")
 }
 
 model Tags {
@@ -65,6 +90,7 @@ model Tags {
 
   @@index([orgId])
   @@index([deletedAt])
+  @@schema("postiz")
 }
 
 model TagsPosts {
@@ -77,10 +103,13 @@ model TagsPosts {
 
   @@id([postId, tagId])
   @@unique([postId, tagId])
+  @@schema("postiz")
 }
 
 model User {
   id                    String               @id @default(uuid())
+  supabaseId            String?              @unique
+  agencyMemberships     AgencyWorkspaceMember[]
   email                 String
   password              String?
   providerName          Provider
@@ -127,6 +156,7 @@ model User {
   @@index([lastOnline])
   @@index([pictureId])
   @@index([deletedAt])
+  @@schema("postiz")
 }
 
 model UsedCodes {
@@ -138,6 +168,7 @@ model UsedCodes {
   organization Organization @relation(fields: [orgId], references: [id])
 
   @@index([code])
+  @@schema("postiz")
 }
 
 model UserOrganization {
@@ -154,6 +185,7 @@ model UserOrganization {
   @@unique([userId, organizationId])
   @@index([organizationId])
   @@index([disabled])
+  @@schema("postiz")
 }
 
 model GitHub {
@@ -169,6 +201,7 @@ model GitHub {
 
   @@index([login])
   @@index([organizationId])
+  @@schema("postiz")
 }
 
 model Trending {
@@ -181,12 +214,14 @@ model Trending {
   updatedAt    DateTime @updatedAt
 
   @@index([hash])
+  @@schema("postiz")
 }
 
 model TrendingLog {
   id       String   @id @default(uuid())
   language String?
   date     DateTime
+  @@schema("postiz")
 }
 
 model ItemUser {
@@ -198,6 +233,7 @@ model ItemUser {
   @@unique([userId, key])
   @@index([userId])
   @@index([key])
+  @@schema("postiz")
 }
 
 model Star {
@@ -212,6 +248,7 @@ model Star {
   updatedAt  DateTime @updatedAt
 
   @@unique([login, date])
+  @@schema("postiz")
 }
 
 model Media {
@@ -239,6 +276,7 @@ model Media {
   // newest-first page is read in index order. With organizationId only, both
   // read every file of the organization from the table.
   @@index([organizationId, createdAt, deletedAt, status])
+  @@schema("postiz")
 }
 
 model SocialMediaAgency {
@@ -268,6 +306,7 @@ model SocialMediaAgency {
   @@index([userId])
   @@index([deletedAt])
   @@index([id])
+  @@schema("postiz")
 }
 
 model SocialMediaAgencyNiche {
@@ -276,6 +315,7 @@ model SocialMediaAgencyNiche {
   agency   SocialMediaAgency @relation(fields: [agencyId], references: [id])
 
   @@id([agencyId, niche])
+  @@schema("postiz")
 }
 
 model Credits {
@@ -289,6 +329,7 @@ model Credits {
 
   @@index([organizationId])
   @@index([createdAt])
+  @@schema("postiz")
 }
 
 model Clipping {
@@ -312,6 +353,7 @@ model Clipping {
 
   @@index([organizationId])
   @@index([deletedAt])
+  @@schema("postiz")
 }
 
 model ClippingClip {
@@ -333,6 +375,7 @@ model ClippingClip {
   clipping   Clipping  @relation(fields: [clippingId], references: [id])
 
   @@index([clippingId])
+  @@schema("postiz")
 }
 
 model Subscription {
@@ -352,6 +395,7 @@ model Subscription {
 
   @@index([organizationId])
   @@index([deletedAt])
+  @@schema("postiz")
 }
 
 model Customer {
@@ -365,6 +409,7 @@ model Customer {
   integrations Integration[]
 
   @@unique([orgId, name, deletedAt])
+  @@schema("postiz")
 }
 
 model Integration {
@@ -410,6 +455,7 @@ model Integration {
   @@index([inBetweenSteps])
   @@index([refreshNeeded])
   @@index([disabled])
+  @@schema("postiz")
 }
 
 model Signatures {
@@ -425,6 +471,7 @@ model Signatures {
   @@index([createdAt])
   @@index([organizationId])
   @@index([deletedAt])
+  @@schema("postiz")
 }
 
 model Comments {
@@ -455,10 +502,12 @@ model Comments {
   @@index([parentId])
   @@index([resolvedAt])
   @@index([deletedAt])
+  @@schema("postiz")
 }
 
 model Post {
   id                         String                    @id @default(cuid())
+  approvalVersion            Int                       @default(1)
   state                      State                     @default(QUEUE)
   publishDate                DateTime
   organizationId             String
@@ -514,6 +563,79 @@ model Post {
   @@index([lastMessageId])
   @@index([createdAt])
   @@index([integrationId])
+  @@schema("postiz")
+}
+
+model BrandDeliveryLease {
+  id             String @id @default(uuid())
+  organizationId String
+  group          String
+  owner          String
+  state          String @default("ACTIVE")
+  fingerprint    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  @@unique([organizationId, group])
+  @@schema("postiz")
+}
+
+model BrandAnalyticsKey {
+  id             String @id @default(uuid())
+  organizationId String
+  tokenHash      String @unique
+  createdAt      DateTime @default(now())
+  revokedAt      DateTime?
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  @@schema("postiz")
+}
+
+model BrandImport {
+  id             String @id @default(uuid())
+  organizationId String
+  requestId      String
+  fingerprint    String
+  state          String @default("RUNNING")
+  owner          String?
+  leaseUntil     DateTime?
+  results        Json @default("[]")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  @@unique([organizationId, requestId])
+  @@schema("postiz")
+}
+
+model BrandSyncRun {
+  id             String @id @default(uuid())
+  organizationId String
+  kind           String
+  status         String
+  detail         Json
+  createdAt      DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  @@index([organizationId, createdAt])
+  @@schema("postiz")
+}
+
+model BrandDeliveryAttempt {
+  id             String @id
+  organizationId String
+  group          String
+  postId         String
+  owner          String
+  operation      String
+  state          String @default("RUNNING")
+  result         String?
+  error          String?
+  reconciledBy   String?
+  reconciledAt   DateTime?
+  reconciliation String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  @@index([organizationId, group, owner])
+  @@schema("postiz")
 }
 
 model Notifications {
@@ -529,6 +651,7 @@ model Notifications {
   @@index([createdAt])
   @@index([organizationId])
   @@index([organizationId, createdAt, deletedAt])
+  @@schema("postiz")
 }
 
 model MessagesGroup {
@@ -548,6 +671,7 @@ model MessagesGroup {
   @@index([createdAt])
   @@index([updatedAt])
   @@index([buyerOrganizationId])
+  @@schema("postiz")
 }
 
 model PayoutProblems {
@@ -562,6 +686,7 @@ model PayoutProblems {
   order     Orders   @relation(fields: [orderId], references: [id])
   post      Post?    @relation(fields: [postId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
+  @@schema("postiz")
 }
 
 model Orders {
@@ -585,6 +710,7 @@ model Orders {
   @@index([updatedAt])
   @@index([createdAt])
   @@index([messageGroupId])
+  @@schema("postiz")
 }
 
 model OrderItems {
@@ -598,6 +724,7 @@ model OrderItems {
 
   @@index([orderId])
   @@index([integrationId])
+  @@schema("postiz")
 }
 
 model Messages {
@@ -615,6 +742,7 @@ model Messages {
   @@index([groupId])
   @@index([createdAt])
   @@index([deletedAt])
+  @@schema("postiz")
 }
 
 model Plugs {
@@ -629,6 +757,7 @@ model Plugs {
 
   @@unique([plugFunction, integrationId])
   @@index([organizationId])
+  @@schema("postiz")
 }
 
 model ExisingPlugData {
@@ -639,6 +768,7 @@ model ExisingPlugData {
   integration   Integration @relation(fields: [integrationId], references: [id])
 
   @@unique([integrationId, methodName, value])
+  @@schema("postiz")
 }
 
 model PopularPosts {
@@ -649,6 +779,7 @@ model PopularPosts {
   hook      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  @@schema("postiz")
 }
 
 model IntegrationsWebhooks {
@@ -661,6 +792,7 @@ model IntegrationsWebhooks {
   @@unique([integrationId, webhookId])
   @@index([integrationId])
   @@index([webhookId])
+  @@schema("postiz")
 }
 
 model Webhooks {
@@ -676,6 +808,7 @@ model Webhooks {
 
   @@index([organizationId])
   @@index([deletedAt])
+  @@schema("postiz")
 }
 
 model AutoPost {
@@ -697,6 +830,7 @@ model AutoPost {
   organization    Organization @relation(fields: [organizationId], references: [id])
 
   @@index([deletedAt])
+  @@schema("postiz")
 }
 
 model Sets {
@@ -709,6 +843,7 @@ model Sets {
   organization   Organization @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId])
+  @@schema("postiz")
 }
 
 model ThirdParty {
@@ -726,6 +861,7 @@ model ThirdParty {
   @@unique([organizationId, internalId])
   @@index([organizationId])
   @@index([deletedAt])
+  @@schema("postiz")
 }
 
 model Errors {
@@ -743,6 +879,7 @@ model Errors {
   @@index([organizationId])
   @@index([createdAt])
   @@index([createdAt, platform])
+  @@schema("postiz")
 }
 
 model Mentions {
@@ -755,6 +892,7 @@ model Mentions {
 
   @@id([name, username, platform, image])
   @@index([createdAt])
+  @@schema("postiz")
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
@@ -821,6 +959,7 @@ model mastra_ai_spans {
   @@index([tags], map: "mastra_ai_spans_tags_gin_idx", type: Gin)
   @@index([traceId, startedAt(sort: Desc)], map: "mastra_ai_spans_traceid_startedat_idx")
   @@ignore
+  @@schema("postiz")
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
@@ -841,6 +980,7 @@ model mastra_evals {
 
   @@index([agent_name, created_at(sort: Desc)], map: "public_mastra_evals_agent_name_created_at_idx")
   @@ignore
+  @@schema("postiz")
 }
 
 model mastra_messages {
@@ -855,6 +995,7 @@ model mastra_messages {
 
   @@index([thread_id, createdAt(sort: Desc)], map: "public_mastra_messages_thread_id_createdat_idx")
   @@index([thread_id, createdAt(sort: Desc)], map: "mastra_messages_thread_id_createdat_idx")
+  @@schema("postiz")
 }
 
 model mastra_resources {
@@ -865,6 +1006,7 @@ model mastra_resources {
   updatedAt     DateTime  @db.Timestamp(6)
   createdAtZ    DateTime? @default(now()) @db.Timestamptz(6)
   updatedAtZ    DateTime? @default(now()) @db.Timestamptz(6)
+  @@schema("postiz")
 }
 
 model mastra_scorers {
@@ -909,6 +1051,7 @@ model mastra_scorers {
 
   @@index([traceId, spanId, createdAt(sort: Desc)], map: "public_mastra_scores_trace_id_span_id_created_at_idx")
   @@index([traceId, spanId, createdAt(sort: Desc)], map: "mastra_scores_trace_id_span_id_created_at_idx")
+  @@schema("postiz")
 }
 
 model mastra_threads {
@@ -923,6 +1066,7 @@ model mastra_threads {
 
   @@index([resourceId, createdAt(sort: Desc)], map: "public_mastra_threads_resourceid_createdat_idx")
   @@index([resourceId, createdAt(sort: Desc)], map: "mastra_threads_resourceid_createdat_idx")
+  @@schema("postiz")
 }
 
 model mastra_traces {
@@ -943,6 +1087,7 @@ model mastra_traces {
   createdAtZ   DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([name, startTime(sort: Desc)], map: "public_mastra_traces_name_starttime_idx")
+  @@schema("postiz")
 }
 
 model mastra_workflow_snapshot {
@@ -957,6 +1102,7 @@ model mastra_workflow_snapshot {
 
   @@unique([workflow_name, run_id], map: "public_mastra_workflow_snapshot_workflow_name_run_id_key")
   @@index([workflow_name, createdAt(sort: Desc)], map: "mastra_workflow_snapshot_name_createdat_idx")
+  @@schema("postiz")
 }
 
 model mastra_agent_versions {
@@ -988,6 +1134,7 @@ model mastra_agent_versions {
   durable              Json?
   browser              Json?
   toolProviders        Json?
+  @@schema("postiz")
 }
 
 model mastra_agents {
@@ -1002,6 +1149,7 @@ model mastra_agents {
   updatedAtZ      DateTime? @default(now()) @db.Timestamptz(6)
   visibility      String?
   favoriteCount   Int?
+  @@schema("postiz")
 }
 
 model mastra_background_tasks {
@@ -1033,6 +1181,7 @@ model mastra_background_tasks {
   @@index([status, createdAt], map: "mastra_bg_tasks_status_created_at_idx")
   @@index([thread_id, createdAt], map: "mastra_bg_tasks_thread_idx")
   @@index([tool_call_id], map: "mastra_bg_tasks_tool_call_idx")
+  @@schema("postiz")
 }
 
 model mastra_channel_config {
@@ -1040,6 +1189,7 @@ model mastra_channel_config {
   data       Json
   updatedAt  DateTime  @db.Timestamp(6)
   updatedAtZ DateTime? @default(now()) @db.Timestamptz(6)
+  @@schema("postiz")
 }
 
 model mastra_channel_installations {
@@ -1057,6 +1207,7 @@ model mastra_channel_installations {
   updatedAtZ DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([platform, agentId], map: "idx_channel_installations_platform_agent")
+  @@schema("postiz")
 }
 
 model mastra_dataset_items {
@@ -1088,6 +1239,7 @@ model mastra_dataset_items {
   @@index([datasetId, datasetVersion], map: "idx_dataset_items_dataset_version")
   @@index([datasetId, externalId, datasetVersion], map: "idx_dataset_items_external_id_history")
   @@index([organizationId, projectId], map: "idx_dataset_items_org_project")
+  @@schema("postiz")
 }
 
 model mastra_dataset_versions {
@@ -1099,6 +1251,7 @@ model mastra_dataset_versions {
 
   @@unique([datasetId, version], map: "idx_dataset_versions_dataset_version_unique")
   @@index([datasetId, version], map: "idx_dataset_versions_dataset_version")
+  @@schema("postiz")
 }
 
 model mastra_datasets {
@@ -1125,6 +1278,7 @@ model mastra_datasets {
 
   @@index([candidateKey, candidateId], map: "idx_datasets_candidate")
   @@index([organizationId, projectId], map: "idx_datasets_org_project")
+  @@schema("postiz")
 }
 
 model mastra_experiment_results {
@@ -1157,6 +1311,7 @@ model mastra_experiment_results {
   @@index([experimentId], map: "idx_experiment_results_experimentid")
   @@index([organizationId, projectId], map: "idx_experiment_results_org_project")
   @@index([tags], map: "idx_experiment_results_tags_gin", type: Gin)
+  @@schema("postiz")
 }
 
 model mastra_experiments {
@@ -1195,6 +1350,7 @@ model mastra_experiments {
   @@index([datasetId], map: "idx_experiments_datasetid")
   @@index([experimentSetId, comparisonId, variantId, trialIndex], map: "idx_experiments_grouping")
   @@index([organizationId, projectId], map: "idx_experiments_org_project")
+  @@schema("postiz")
 }
 
 model mastra_favorites {
@@ -1206,6 +1362,7 @@ model mastra_favorites {
 
   @@id([userId, entityType, entityId])
   @@index([entityType, entityId], map: "idx_favorites_entity")
+  @@schema("postiz")
 }
 
 model mastra_knowledge_activity {
@@ -1220,6 +1377,7 @@ model mastra_knowledge_activity {
   createdAtZ     DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([id(sort: Desc)], map: "idx_knowledge_activity_latest")
+  @@schema("postiz")
 }
 
 model mastra_knowledge_cursors {
@@ -1230,6 +1388,7 @@ model mastra_knowledge_cursors {
   updatedAtZ      DateTime? @default(now()) @db.Timestamptz(6)
 
   @@id([sourceThreadId, agent])
+  @@schema("postiz")
 }
 
 model mastra_knowledge_mentions {
@@ -1239,6 +1398,7 @@ model mastra_knowledge_mentions {
 
   @@id([sourceType, sourceId, recordId])
   @@index([recordId, sourceType, sourceId], map: "idx_knowledge_mentions_record")
+  @@schema("postiz")
 }
 
 model mastra_knowledge_nodes {
@@ -1260,6 +1420,7 @@ model mastra_knowledge_nodes {
 
   @@unique([type, scopeKey, canonicalName], map: "idx_knowledge_nodes_identity")
   @@index([scopeKey, type], map: "idx_knowledge_nodes_scope")
+  @@schema("postiz")
 }
 
 model mastra_knowledge_records {
@@ -1281,6 +1442,7 @@ model mastra_knowledge_records {
 
   @@index([node, id(sort: Desc)], map: "idx_knowledge_records_node_latest")
   @@index([sourceThreadId, id(sort: Desc)], map: "idx_knowledge_records_thread_latest")
+  @@schema("postiz")
 }
 
 model mastra_knowledge_semantic_outbox {
@@ -1304,6 +1466,7 @@ model mastra_knowledge_semantic_outbox {
   completedAtZ   DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([status, availableAt, createdAt], map: "idx_knowledge_outbox_claim")
+  @@schema("postiz")
 }
 
 model mastra_mcp_client_versions {
@@ -1319,6 +1482,7 @@ model mastra_mcp_client_versions {
   createdAtZ    DateTime? @default(now()) @db.Timestamptz(6)
 
   @@unique([mcpClientId, versionNumber], map: "idx_mcp_client_versions_client_version")
+  @@schema("postiz")
 }
 
 model mastra_mcp_clients {
@@ -1331,6 +1495,7 @@ model mastra_mcp_clients {
   updatedAt       DateTime  @db.Timestamp(6)
   createdAtZ      DateTime? @default(now()) @db.Timestamptz(6)
   updatedAtZ      DateTime? @default(now()) @db.Timestamptz(6)
+  @@schema("postiz")
 }
 
 model mastra_mcp_server_versions {
@@ -1354,6 +1519,7 @@ model mastra_mcp_server_versions {
   createdAtZ       DateTime? @default(now()) @db.Timestamptz(6)
 
   @@unique([mcpServerId, versionNumber], map: "idx_mcp_server_versions_server_version")
+  @@schema("postiz")
 }
 
 model mastra_mcp_servers {
@@ -1366,6 +1532,7 @@ model mastra_mcp_servers {
   updatedAt       DateTime  @db.Timestamp(6)
   createdAtZ      DateTime? @default(now()) @db.Timestamptz(6)
   updatedAtZ      DateTime? @default(now()) @db.Timestamptz(6)
+  @@schema("postiz")
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
@@ -1416,6 +1583,7 @@ model mastra_notifications {
   @@index([status, deliverAt, summaryAt], map: "idx_notifications_due")
   @@index([threadId, status, updatedAt], map: "idx_notifications_thread_status_updated")
   @@ignore
+  @@schema("postiz")
 }
 
 model mastra_observational_memory {
@@ -1460,6 +1628,7 @@ model mastra_observational_memory {
   updatedAtZ                      DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([lookupKey], map: "idx_om_lookup_key")
+  @@schema("postiz")
 }
 
 model mastra_prompt_block_versions {
@@ -1477,6 +1646,7 @@ model mastra_prompt_block_versions {
   createdAtZ           DateTime? @default(now()) @db.Timestamptz(6)
 
   @@unique([blockId, versionNumber], map: "idx_prompt_block_versions_block_version")
+  @@schema("postiz")
 }
 
 model mastra_prompt_blocks {
@@ -1489,6 +1659,7 @@ model mastra_prompt_blocks {
   updatedAt       DateTime  @db.Timestamp(6)
   createdAtZ      DateTime? @default(now()) @db.Timestamptz(6)
   updatedAtZ      DateTime? @default(now()) @db.Timestamptz(6)
+  @@schema("postiz")
 }
 
 model mastra_schedule_triggers {
@@ -1504,6 +1675,7 @@ model mastra_schedule_triggers {
   metadata          Json?
 
   @@index([schedule_id, actual_fire_at(sort: Desc)], map: "idx_mastra_schedule_triggers_schedule_fire")
+  @@schema("postiz")
 }
 
 model mastra_schedules {
@@ -1522,6 +1694,7 @@ model mastra_schedules {
   owner_id     String?
 
   @@index([status, next_fire_at], map: "idx_mastra_schedules_status_next_fire")
+  @@schema("postiz")
 }
 
 model mastra_scorer_definition_versions {
@@ -1542,6 +1715,7 @@ model mastra_scorer_definition_versions {
   createdAtZ         DateTime? @default(now()) @db.Timestamptz(6)
 
   @@unique([scorerDefinitionId, versionNumber], map: "idx_scorer_definition_versions_def_version")
+  @@schema("postiz")
 }
 
 model mastra_scorer_definitions {
@@ -1556,6 +1730,7 @@ model mastra_scorer_definitions {
   updatedAtZ      DateTime? @default(now()) @db.Timestamptz(6)
   organizationId  String?
   projectId       String?
+  @@schema("postiz")
 }
 
 model mastra_skill_blobs {
@@ -1565,6 +1740,7 @@ model mastra_skill_blobs {
   mimeType   String?
   createdAt  DateTime  @db.Timestamp(6)
   createdAtZ DateTime? @default(now()) @db.Timestamptz(6)
+  @@schema("postiz")
 }
 
 model mastra_skill_versions {
@@ -1589,6 +1765,7 @@ model mastra_skill_versions {
   files         Json?
 
   @@unique([skillId, versionNumber], map: "idx_skill_versions_skill_version")
+  @@schema("postiz")
 }
 
 model mastra_skills {
@@ -1602,6 +1779,7 @@ model mastra_skills {
   updatedAtZ      DateTime? @default(now()) @db.Timestamptz(6)
   visibility      String?
   favoriteCount   Int?
+  @@schema("postiz")
 }
 
 model mastra_thread_state {
@@ -1614,6 +1792,7 @@ model mastra_thread_state {
   updatedAtZ DateTime? @default(now()) @db.Timestamptz(6)
 
   @@id([threadId, type])
+  @@schema("postiz")
 }
 
 model mastra_tool_provider_connections {
@@ -1630,6 +1809,7 @@ model mastra_tool_provider_connections {
 
   @@id([authorId, providerId, connectionId])
   @@index([authorId, providerId, toolkit], map: "idx_tool_provider_connections_author")
+  @@schema("postiz")
 }
 
 model mastra_workflow_definitions {
@@ -1651,6 +1831,7 @@ model mastra_workflow_definitions {
   updatedAtZ           DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([status], map: "idx_workflow_definitions_status")
+  @@schema("postiz")
 }
 
 model mastra_workspace_versions {
@@ -1673,6 +1854,7 @@ model mastra_workspace_versions {
   createdAtZ       DateTime? @default(now()) @db.Timestamptz(6)
 
   @@unique([workspaceId, versionNumber], map: "idx_workspace_versions_workspace_version")
+  @@schema("postiz")
 }
 
 model mastra_workspaces {
@@ -1685,6 +1867,7 @@ model mastra_workspaces {
   updatedAt       DateTime  @db.Timestamp(6)
   createdAtZ      DateTime? @default(now()) @db.Timestamptz(6)
   updatedAtZ      DateTime? @default(now()) @db.Timestamptz(6)
+  @@schema("postiz")
 }
 
 model OAuthApp {
@@ -1712,6 +1895,7 @@ model OAuthApp {
   @@index([organizationId])
   @@index([deletedAt])
   @@index([dynamic])
+  @@schema("postiz")
 }
 
 model OAuthAuthorization {
@@ -1739,6 +1923,7 @@ model OAuthAuthorization {
   @@index([userId])
   @@index([organizationId])
   @@index([revokedAt])
+  @@schema("postiz")
 }
 
 model OAuthSelfHostedAuthorization {
@@ -1761,6 +1946,7 @@ model OAuthSelfHostedAuthorization {
   @@index([accessToken])
   @@index([authorizationCode])
   @@index([oauthAppId])
+  @@schema("postiz")
 }
 
 enum OrderStatus {
@@ -1768,11 +1954,13 @@ enum OrderStatus {
   ACCEPTED
   CANCELED
   COMPLETED
+  @@schema("postiz")
 }
 
 enum From {
   BUYER
   SELLER
+  @@schema("postiz")
 }
 
 enum State {
@@ -1780,6 +1968,7 @@ enum State {
   PUBLISHED
   ERROR
   DRAFT
+  @@schema("postiz")
 }
 
 enum SubscriptionTier {
@@ -1787,11 +1976,13 @@ enum SubscriptionTier {
   PRO
   TEAM
   ULTIMATE
+  @@schema("postiz")
 }
 
 enum Period {
   MONTHLY
   YEARLY
+  @@schema("postiz")
 }
 
 enum Provider {
@@ -1802,18 +1993,283 @@ enum Provider {
   FARCASTER
   WALLET
   GENERIC
+  @@schema("postiz")
 }
 
 enum Role {
   SUPERADMIN
   ADMIN
   USER
+  REVIEWER
+  @@schema("postiz")
+}
+
+model AgencyWorkspace {
+  id            String                  @id @default(uuid())
+  name          String
+  createdAt     DateTime                @default(now())
+  organizations Organization[]
+  members       AgencyWorkspaceMember[]
+  @@schema("postiz")
+}
+
+model AgencyWorkspaceMember {
+  id        String          @id @default(uuid())
+  agencyId  String
+  userId    String
+  role      Role            @default(USER)
+  agency    AgencyWorkspace @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+  @@unique([agencyId, userId])
+  @@schema("postiz")
+}
+
+enum BrandReviewState {
+  PENDING
+  APPROVED
+  CHANGES_REQUESTED
+  SUPERSEDED
+  @@schema("postiz")
+}
+
+model BrandReview {
+  id             String           @id @default(uuid())
+  organizationId String
+  group          String
+  fingerprint    String
+  snapshot       Json
+  state          BrandReviewState @default(PENDING)
+  requestedBy    String
+  decidedBy      String?
+  comment        String?
+  createdAt      DateTime         @default(now())
+  decidedAt      DateTime?
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@unique([organizationId, group, fingerprint])
+  @@index([organizationId, state, createdAt])
+  @@schema("postiz")
+}
+
+model BrandMetric {
+  id             String       @id @default(uuid())
+  key            String       @unique
+  organizationId String
+  integrationId  String
+  subjectId      String       @default("")
+  provider       String
+  metric         String
+  value          Float
+  unit           String       @default("count")
+  definition     String
+  periodStart    DateTime
+  collectedAt    DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId, periodStart, integrationId])
+  @@schema("postiz")
+}
+
+model BrandCompetitor {
+  id             String       @id @default(uuid())
+  organizationId String
+  provider       String
+  handle         String
+  data           Json?
+  collectedAt    DateTime?
+  error          String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@unique([organizationId, provider, handle])
+  @@schema("postiz")
+}
+
+model BrandConversation {
+  id             String         @id @default(uuid())
+  organizationId String
+  integrationId  String
+  provider       String
+  externalId     String
+  kind           String
+  postExternalId String?
+  title          String
+  status         String         @default("OPEN")
+  assignedTo     String?
+  updatedAt      DateTime       @updatedAt
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  messages       BrandMessage[]
+  @@unique([integrationId, externalId])
+  @@index([organizationId, status, updatedAt])
+  @@schema("postiz")
+}
+
+model BrandMessage {
+  id             String            @id @default(uuid())
+  conversationId String
+  externalId     String
+  author         String
+  authorId       String?
+  content        String
+  direction      String            @default("INBOUND")
+  deliveryStatus String            @default("RECEIVED")
+  requestKey     String?           @unique
+  createdAt      DateTime           @default(now())
+  conversation   BrandConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  @@unique([conversationId, externalId])
+  @@schema("postiz")
+}
+
+model BrandSavedReply {
+  id             String       @id @default(uuid())
+  organizationId String
+  title          String
+  content        String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@schema("postiz")
+}
+
+model BrandFlow {
+  id             String             @id @default(uuid())
+  organizationId String
+  integrationId  String
+  name           String
+  keyword        String
+  postExternalId String?
+  publicReply    String?
+  directReply    String?
+  enabled        Boolean            @default(false)
+  createdAt      DateTime           @default(now())
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  executions     BrandFlowExecution[]
+  @@schema("postiz")
+}
+
+model BrandFlowExecution {
+  id          String    @id @default(uuid())
+  flowId      String
+  messageId   String
+  status      String    @default("PENDING")
+  error       String?
+  result      Json?
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+  flow        BrandFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  @@unique([flowId, messageId])
+  @@schema("postiz")
+}
+
+model BrandLinkPage {
+  id             String           @id @default(uuid())
+  organizationId String
+  slug           String           @unique
+  title          String
+  description    String           @default("")
+  theme          String           @default("violet")
+  links          Json
+  published      Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clicks         BrandLinkClick[]
+  @@schema("postiz")
+}
+
+model BrandLinkClick {
+  id        String        @id @default(uuid())
+  pageId    String
+  linkId    String
+  createdAt DateTime      @default(now())
+  referrer  String?
+  page      BrandLinkPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  @@index([pageId, createdAt, linkId])
+  @@schema("postiz")
+}
+
+model BrandWebsite {
+  id             String           @id @default(uuid())
+  organizationId String
+  domain         String
+  siteKey        String           @unique @default(uuid())
+  enabled        Boolean          @default(true)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  events         BrandWebsiteEvent[]
+  @@unique([organizationId, domain])
+  @@schema("postiz")
+}
+
+model BrandWebsiteEvent {
+  id         String       @id @default(uuid())
+  websiteId  String
+  pathname   String
+  referrer   String?
+  country    String?
+  visitorKey String
+  createdAt  DateTime     @default(now())
+  website    BrandWebsite @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  @@index([websiteId, createdAt])
+  @@schema("postiz")
+}
+
+model BrandReport {
+  id             String       @id @default(uuid())
+  organizationId String
+  name           String
+  from           DateTime
+  to             DateTime
+  format         String       @default("pdf")
+  logoUrl        String?
+  logoMediaId    String?
+  accentColor    String       @default("612BD3")
+  period         String       @default("FIXED")
+  sourceReportId String?
+  recipients     String[]     @default([])
+  monthlyDay     Int?
+  nextRunAt      DateTime?
+  lastRunAt      DateTime?
+  shareTokenHash String?      @unique
+  shareExpiresAt DateTime?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@schema("postiz")
+  @@unique([sourceReportId, from, to])
+}
+
+model BrandAdAccount {
+  id             String       @id @default(uuid())
+  organizationId String
+  provider       String
+  externalId     String
+  name           String
+  token          String
+  refreshToken   String?
+  expiresAt      DateTime?
+  developerToken String?
+  loginAccountId String?
+  snapshots      Json?
+  collectedAt    DateTime?
+  lastError      String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@unique([organizationId, provider, externalId])
+  @@schema("postiz")
+}
+
+model BrandUploadTicket {
+  id             String       @id @default(uuid())
+  organizationId String
+  objectKey      String       @unique
+  originalName   String
+  contentType    String
+  expectedSize   Int
+  expiresAt      DateTime
+  completedAt    DateTime?
+  mediaId        String?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@schema("postiz")
 }
 
 enum APPROVED_SUBMIT_FOR_ORDER {
   NO
   WAITING_CONFIRMATION
   YES
+  @@schema("postiz")
 }
 
 enum CreationMethod {
@@ -1823,18 +2279,21 @@ enum CreationMethod {
   API
   AUTOPOST
   CLI
+  @@schema("postiz")
 }
 
 enum ShortLinkPreference {
   ASK
   YES
   NO
+  @@schema("postiz")
 }
 
 enum AnnouncementColor {
   INFO
   WARNING
   ERROR
+  @@schema("postiz")
 }
 
 model Announcement {
@@ -1843,4 +2302,5 @@ model Announcement {
   description String
   color       AnnouncementColor @default(INFO)
   createdAt   DateTime          @default(now())
+  @@schema("postiz")
 }

@@ -3,7 +3,7 @@ initializeSentry('backend', true);
 import compression from 'compression';
 
 import { loadSwagger } from '@gitroom/helpers/swagger/load.swagger';
-import { json } from 'express';
+import { json, text } from 'express';
 import { Runtime } from '@temporalio/worker';
 Runtime.install({ shutdownSignals: [] });
 
@@ -70,8 +70,12 @@ async function start() {
   app.use(['/copilot/{*splat}', '/posts'], (req: any, res: any, next: any) => {
     json({ limit: '50mb' })(req, res, next);
   });
+  // Nest detects jsonParser by its middleware name; keep this route-specific
+  // parser inside a wrapper so the default parser still covers other routes.
+  app.use('/agency/imports', (req: any, res: any, next: any) => json({ limit: '4mb' })(req, res, next));
 
   app.use(cookieParser());
+  app.use('/agency-public/track', text({ type: 'text/plain', limit: '5kb' }));
   app.use(compression());
   app.useGlobalFilters(new SubscriptionExceptionFilter());
   app.useGlobalFilters(new PostValidationExceptionFilter());

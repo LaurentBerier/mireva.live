@@ -1,5 +1,6 @@
 import { PrismaRepository } from '@gitroom/nestjs-libraries/database/prisma/prisma.service';
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
+import { ReviewRepository } from '../agency/review.repository';
 import { Post as PostBody } from '@gitroom/nestjs-libraries/dtos/posts/create.post.dto';
 import {
   APPROVED_SUBMIT_FOR_ORDER,
@@ -30,6 +31,7 @@ dayjs.extend(utc);
 
 @Injectable()
 export class PostsRepository {
+  mediaOwner(id: string) { return this._post.model.post.findUnique({ where: { id }, select: { organizationId: true } }); }
   constructor(
     private _post: PrismaRepository<'post'>,
     private _popularPosts: PrismaRepository<'popularPosts'>,
@@ -37,7 +39,8 @@ export class PostsRepository {
     private _tags: PrismaRepository<'tags'>,
     private _tagsPosts: PrismaRepository<'tagsPosts'>,
     private _errors: PrismaRepository<'errors'>,
-    private _encryptionService: EncryptionService
+    private _encryptionService: EncryptionService,
+    private readonly reviews: ReviewRepository
   ) {}
 
   // A post that was loaded with its whole channel carries the tokens of the
@@ -443,7 +446,8 @@ export class PostsRepository {
   }
 
   async deletePost(orgId: string, group: string) {
-    await this._post.model.post.updateMany({
+    return this.reviews.edit(orgId, [group], async tx => {
+    await tx.post.updateMany({
       where: {
         organizationId: orgId,
         group,
@@ -453,7 +457,7 @@ export class PostsRepository {
       },
     });
 
-    return this._post.model.post.findFirst({
+    return tx.post.findFirst({
       where: {
         organizationId: orgId,
         group,
@@ -462,6 +466,7 @@ export class PostsRepository {
       select: {
         id: true,
       },
+    });
     });
   }
 
@@ -595,6 +600,30 @@ export class PostsRepository {
     });
   }
 
+  async changeScheduledState(orgId: string, id: string, state: State) {
+    return this.reviews.edit(orgId, async tx => (await tx.post.findMany({ where: { id, organizationId: orgId }, select: { group: true } })).map(post => post.group), async tx => {
+      const post = await tx.post.findUniqueOrThrow({ where: { id, organizationId: orgId }, select: { group: true } });
+      await tx.post.updateMany({ where: { organizationId: orgId, group: post.group, deletedAt: null }, data: { state, ...(state === 'DRAFT' ? { approvalVersion: { increment: 1 } } : {}) } });
+      return { id };
+    });
+  }
+
+  async failScheduledVersion(orgId: string, id: string, version: number, owner: string, error: string, expectedFingerprint?: string) {
+    return this.reviews.fenced(orgId, async tx => {
+      const post = await tx.post.findFirst({ where: { id, organizationId: orgId, deletedAt: null, approvalVersion: version, state: { in: ['QUEUE', 'PUBLISHED'] } }, select: { group: true, state: true } });
+      if (!post) return { count: 0 };
+      if (expectedFingerprint) {
+        const policy = await tx.organization.findUniqueOrThrow({ where: { id: orgId }, select: { approvalRequired: true } });
+        const current = await this.reviews.snapshot(orgId, post.group, tx, policy.approvalRequired).catch(() => null);
+        if (current?.fingerprint !== expectedFingerprint) return { count: 0 };
+      }
+      const lease = await tx.brandDeliveryLease.findUnique({ where: { organizationId_group: { organizationId: orgId, group: post.group } } });
+      if (post.state === 'PUBLISHED' && (!lease || lease.owner !== owner || lease.state === 'RELEASED')) return { count: 0 };
+      if (lease && lease.state !== 'RELEASED' && lease.owner !== owner) return { count: 0 };
+      return tx.post.updateMany({ where: { id, organizationId: orgId, deletedAt: null, approvalVersion: version, state: { in: ['QUEUE', 'PUBLISHED'] } }, data: { state: 'ERROR', error: error.slice(0, 2000) } });
+    });
+  }
+
   async changeState(id: string, state: State, err?: any, body?: any) {
     const update = await this._post.model.post.update({
       where: {
@@ -623,7 +652,9 @@ export class PostsRepository {
             organizationId: update.organizationId,
             platform: update.integration.providerIdentifier,
             postId: update.id,
-            body: typeof body === 'string' ? body : JSON.stringify(body),
+            body: process.env.AUTH_PROVIDER === 'supabase'
+              ? JSON.stringify({ postIds: Array.isArray(body) ? body.map(post => post.id).filter(Boolean) : [id] })
+              : typeof body === 'string' ? body : JSON.stringify(body),
           },
         });
       } catch (err) {}
@@ -632,39 +663,24 @@ export class PostsRepository {
     return update;
   }
 
-  getErrorsByPostIds(postIds: string[]) {
-    return this._errors.model.errors.findMany({
+  async getErrorsByPostIds(postIds: string[]) {
+    const errors = await this._errors.model.errors.findMany({
       where: {
         postId: { in: postIds },
       },
       orderBy: { createdAt: 'desc' },
     });
+    return process.env.AUTH_PROVIDER === 'supabase' ? errors.map(error => ({ ...error, message: 'Provider delivery failed; use the error ID for server-side investigation', body: `Error ID: ${error.id}` })) : errors;
   }
 
-  async changeDate(
-    orgId: string,
-    id: string,
-    date: string,
-    isDraft: boolean,
-    action: 'schedule' | 'update' = 'schedule'
-  ) {
-    return this._post.model.post.update({
-      where: {
-        organizationId: orgId,
-        id,
-      },
-      data: {
-        publishDate: dayjs(date).toDate(),
-        // schedule: set state to QUEUE (or DRAFT if it was a draft)
-        // update: don't change the state
-        ...(action === 'schedule'
-          ? {
-              state: isDraft ? 'DRAFT' : 'QUEUE',
-              releaseId: null,
-              releaseURL: null,
-            }
-          : {}),
-      },
+  async changeDate(orgId: string, id: string, date: string, isDraft: boolean, action: 'schedule' | 'update' = 'schedule') {
+    return this.reviews.edit(orgId, async tx => (await tx.post.findMany({ where: { id, organizationId: orgId }, select: { group: true } })).map(post => post.group), async tx => {
+      const root = await tx.post.findUniqueOrThrow({ where: { id, organizationId: orgId }, select: { group: true } });
+      await tx.post.updateMany({ where: { organizationId: orgId, group: root.group, deletedAt: null }, data: {
+        publishDate: dayjs(date).toDate(), approvalVersion: { increment: 1 },
+        ...(action === 'schedule' || isDraft ? { state: isDraft ? 'DRAFT' : 'QUEUE', releaseId: null, releaseURL: null } : {}),
+      } });
+      return tx.post.findUniqueOrThrow({ where: { id } });
     });
   }
 
@@ -717,9 +733,16 @@ export class PostsRepository {
     keepGroup = false,
     // Shared by the posts saved together for several channels, so opening one
     // of them in the editor brings the others.
-    batchId?: string
+    batchId?: string,
+    importLease?: { id: string; owner: string }
   ) {
+    return this.reviews.edit(orgId, async tx => (await tx.post.findMany({ where: { organizationId: orgId,
+      OR: [...(body.group ? [{ group: body.group }] : []), { id: { in: body.value.map(value => value.id).filter(Boolean) as string[] } }] }, select: { group: true } })).map(post => post.group), async tx => {
     const posts: Post[] = [];
+    if (importLease) {
+      const claim = await tx.brandImport.updateMany({ where: { id: importLease.id, organizationId: orgId, owner: importLease.owner, state: 'RUNNING', leaseUntil: { gt: new Date() } }, data: { leaseUntil: new Date(Date.now() + 120000) } });
+      if (!claim.count) throw new ConflictException('Import ownership expired');
+    }
     const uuid = uuidv4();
     const group = keepGroup && body.group ? body.group : uuid;
 
@@ -729,7 +752,7 @@ export class PostsRepository {
     const existingBatchId =
       body.group || ids.length
         ? (
-            await this._post.model.post.findFirst({
+            await tx.post.findFirst({
               where: {
                 organizationId: orgId,
                 deletedAt: null,
@@ -749,6 +772,10 @@ export class PostsRepository {
         : undefined;
 
     for (const value of body.value) {
+      if (importLease && value.id) {
+        const existing = await tx.post.findFirst({ where: { id: value.id, organizationId: orgId } });
+        if (existing) { posts.push(existing); continue; }
+      }
       const updateData = (type: 'create' | 'update') => ({
         publishDate: dayjs(date).toDate(),
         integration: {
@@ -794,14 +821,17 @@ export class PostsRepository {
         },
       });
 
+      const postId = value.id || uuidv4();
       posts.push(
-        await this._post.model.post.upsert({
+        await tx.post.upsert({
           where: {
-            id: value.id || uuidv4(),
+            id: postId,
+            organizationId: orgId,
           },
-          create: { ...updateData('create') },
+          create: { id: postId, ...updateData('create') },
           update: {
             ...updateData('update'),
+            approvalVersion: { increment: 1 },
             lastMessage: {
               disconnect: true,
             },
@@ -813,7 +843,7 @@ export class PostsRepository {
       );
 
       if (posts.length === 1) {
-        await this._tagsPosts.model.tagsPosts.deleteMany({
+        await tx.tagsPosts.deleteMany({
           where: {
             post: {
               id: posts[0].id,
@@ -822,7 +852,7 @@ export class PostsRepository {
         });
 
         if (tags.length) {
-          const tagsList = await this._tags.model.tags.findMany({
+          const tagsList = await tx.tags.findMany({
             where: {
               orgId: orgId,
               deletedAt: null,
@@ -833,7 +863,7 @@ export class PostsRepository {
           });
 
           if (tagsList.length) {
-            await this._post.model.post.update({
+            await tx.post.update({
               where: {
                 id: posts[posts.length - 1].id,
               },
@@ -854,7 +884,7 @@ export class PostsRepository {
 
     const previousPost = body.group
       ? (
-          await this._post.model.post.findFirst({
+          await tx.post.findFirst({
             where: {
               organizationId: orgId,
               group: body.group,
@@ -869,7 +899,7 @@ export class PostsRepository {
       : undefined;
 
     if (body.group && !keepGroup) {
-      await this._post.model.post.updateMany({
+      await tx.post.updateMany({
         where: {
           organizationId: orgId,
           group: body.group,
@@ -885,7 +915,7 @@ export class PostsRepository {
     // keepGroup: the updated rows still carry the old group, so sweep only the
     // rows dropped from it (removed comments) by id instead of by group.
     if (body.group && keepGroup) {
-      await this._post.model.post.updateMany({
+      await tx.post.updateMany({
         where: {
           organizationId: orgId,
           group: body.group,
@@ -902,6 +932,7 @@ export class PostsRepository {
     }
 
     return { previousPost, posts };
+    });
   }
 
   async submit(id: string, order: string, buyerOrganizationId: string) {
@@ -984,8 +1015,8 @@ export class PostsRepository {
     } as const;
   }
 
-  getPostTimeline(id: string, org: string) {
-    return this._post.model.post.findFirst({
+  async getPostTimeline(id: string, org: string) {
+    const timeline = await this._post.model.post.findFirst({
       where: {
         id,
         organizationId: org,
@@ -1018,6 +1049,9 @@ export class PostsRepository {
         },
       },
     });
+    if (!timeline || process.env.AUTH_PROVIDER !== 'supabase') return timeline;
+    return { ...timeline, error: timeline.error ? 'Delivery failed; check connection readiness and delivery reconciliation' : timeline.error,
+      errors: timeline.errors.map(error => ({ ...error, message: 'Provider delivery failed; use the error ID for server-side investigation', body: `Error ID: ${error.id}` })) };
   }
 
   findAllExistingCategories() {

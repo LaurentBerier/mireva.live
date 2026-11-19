@@ -1,4 +1,6 @@
 import {
+  UsePipes,
+  ValidationPipe,
   Body,
   Controller,
   Get,
@@ -38,6 +40,7 @@ import {
 } from '@gitroom/backend/services/auth/permissions/permission.exception.class';
 
 @ApiTags('User')
+@UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 @Controller('/user')
 export class UsersController {
   constructor(
@@ -95,6 +98,7 @@ export class UsersController {
     return {
       ...user,
       orgId: organization.id,
+      brandTimezoneName: process.env.AUTH_PROVIDER === 'supabase' ? organization.timezoneName : undefined,
       totalChannels: !process.env.STRIPE_PUBLISHABLE_KEY
         ? 10000
         : // @ts-ignore

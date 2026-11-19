@@ -10,8 +10,10 @@ import { MediaActivity } from '@gitroom/orchestrator/activities/media.activity';
 import { ClippingActivity } from '@gitroom/orchestrator/activities/clipping.activity';
 import { VideoModule } from '@gitroom/nestjs-libraries/videos/video.module';
 import { HealthController } from '@gitroom/orchestrator/health.controller';
+import { AgencyActivity } from './activities/agency.activity';
 
 const activities = [
+  AgencyActivity,
   PostActivity,
   AutopostActivity,
   EmailActivity,

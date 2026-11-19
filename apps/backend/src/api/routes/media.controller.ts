@@ -25,6 +25,8 @@ import { UploadFactory } from '@gitroom/nestjs-libraries/upload/upload.factory';
 import { SaveMediaInformationDto } from '@gitroom/nestjs-libraries/dtos/media/save.media.information.dto';
 import { VideoDto } from '@gitroom/nestjs-libraries/dtos/videos/video.dto';
 import { VideoFunctionDto } from '@gitroom/nestjs-libraries/dtos/videos/video.function.dto';
+import { AgencyMediaService } from '@gitroom/nestjs-libraries/database/prisma/agency/media.service';
+import { InitializeBrandUploadDto } from '@gitroom/nestjs-libraries/dtos/agency/workspace.dto';
 
 @ApiTags('Media')
 @Controller('/media')
@@ -32,8 +34,25 @@ export class MediaController {
   private storage = UploadFactory.createStorage();
   constructor(
     private _mediaService: MediaService,
-    private _subscriptionService: SubscriptionService
+    private _subscriptionService: SubscriptionService,
+    private readonly agencyMedia: AgencyMediaService
   ) {}
+
+  @Post('/supabase/initialize')
+  initializeUpload(@GetOrgFromRequest() org: Organization, @Body() body: InitializeBrandUploadDto) {
+    return this.agencyMedia.initialize(org.id, body);
+  }
+
+  @Post('/supabase/:id/complete')
+  completeUpload(@GetOrgFromRequest() org: Organization, @Param('id') id: string) {
+    return this.agencyMedia.complete(org.id, id);
+  }
+
+  @Get('/private/:key')
+  async privateAsset(@GetOrgFromRequest() org: Organization, @Param('key') key: string, @Res() response: Response) {
+    response.setHeader('Cache-Control', 'private, no-store');
+    response.redirect(302, await this.agencyMedia.signedAsset(org.id, key));
+  }
 
   @Delete('/:id')
   deleteMedia(@GetOrgFromRequest() org: Organization, @Param('id') id: string) {

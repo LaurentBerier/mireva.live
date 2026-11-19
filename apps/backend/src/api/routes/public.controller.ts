@@ -1,5 +1,6 @@
 import {
   Body,
+  NotFoundException,
   Controller,
   Get,
   Param,
@@ -53,6 +54,7 @@ export class PublicController {
 
   @Get(`/posts/:id`)
   async getPreview(@Param('id') id: string) {
+    if (process.env.AUTH_PROVIDER === 'supabase') throw new NotFoundException();
     // the batch only links the posts in the dashboard, it stays out of the
     // public preview
     return (await this._postsService.getPostsRecursively(id, true)).map(
@@ -75,6 +77,7 @@ export class PublicController {
 
   @Get(`/posts/:id/comments`)
   async getComments(@Param('id') postId: string) {
+    if (process.env.AUTH_PROVIDER === 'supabase') throw new NotFoundException();
     return { comments: await this._postsService.getComments(postId) };
   }
 
@@ -84,6 +87,7 @@ export class PublicController {
     @Body() body: CreatePublicCommentDto,
     @RealIP() ip: string
   ) {
+    if (process.env.AUTH_PROVIDER === 'supabase') throw new NotFoundException();
     return this._postsService.createPublicComment(postId, body, null, ip);
   }
 

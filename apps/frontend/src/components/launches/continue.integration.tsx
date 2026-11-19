@@ -182,7 +182,7 @@ export const ContinueIntegration: FC<{
               provider,
               integrationId: id,
               jwt: extensionToken,
-              backendUrl,
+              backendUrl: new URL(backendUrl, window.location.origin).href.replace(/\/$/, ''),
             },
             () => {
               if (chrome.runtime.lastError) {

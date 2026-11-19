@@ -21,7 +21,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         <VariableContextComponent
           language="en"
           storageProvider={
-            process.env.STORAGE_PROVIDER! as 'local' | 'cloudflare'
+            process.env.STORAGE_PROVIDER! as 'local' | 'cloudflare' | 'supabase'
           }
           stripeClient=""
           environment={process.env.NODE_ENV!}
@@ -50,7 +50,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           sentryDsn={process.env.NEXT_PUBLIC_SENTRY_DSN!}
           extensionId={process.env.EXTENSION_ID || ''}
           mediaProcessing={
-            process.env.STORAGE_PROVIDER === 'cloudflare' &&
+            ['cloudflare', 'supabase'].includes(process.env.STORAGE_PROVIDER || '') &&
             !!process.env.RUNPOD_API_KEY &&
             !!process.env.RUNPOD_ENDPOINT_ID
           }

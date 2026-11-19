@@ -1,4 +1,5 @@
 import { CloudflareStorage } from './cloudflare.storage';
+import { SupabaseStorage } from './supabase.storage';
 import { IUploadProvider } from './upload.interface';
 import { LocalStorage } from './local.storage';
 import { IMediaProcessor } from './media.processor.interface';
@@ -15,6 +16,8 @@ export class UploadFactory {
     const storageProvider = process.env.STORAGE_PROVIDER || 'local';
 
     switch (storageProvider) {
+      case 'supabase':
+        return new SupabaseStorage();
       case 'local':
         return new LocalStorage(process.env.UPLOAD_DIRECTORY!);
       case 'cloudflare':
@@ -34,7 +37,7 @@ export class UploadFactory {
   // Normalization needs presigned URLs, so it is only available on cloud storage
   static processorEnabled() {
     return (
-      process.env.STORAGE_PROVIDER === 'cloudflare' &&
+      ['cloudflare', 'supabase'].includes(process.env.STORAGE_PROVIDER || '') &&
       !!process.env.RUNPOD_API_KEY &&
       !!process.env.RUNPOD_ENDPOINT_ID
     );
@@ -55,7 +58,7 @@ export class UploadFactory {
   // transcriber, so it is only available on cloud storage as well
   static clippingEnabled() {
     return (
-      process.env.STORAGE_PROVIDER === 'cloudflare' &&
+      ['cloudflare', 'supabase'].includes(process.env.STORAGE_PROVIDER || '') &&
       !!process.env.RUNPOD_API_KEY &&
       !!process.env.RUNPOD_INGEST_ENDPOINT_ID &&
       !!process.env.RUNPOD_CLIPPER_ENDPOINT_ID &&
