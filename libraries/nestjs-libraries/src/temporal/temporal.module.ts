@@ -2,6 +2,22 @@ import { TemporalModule } from 'nestjs-temporal-core';
 import { socialIntegrationList } from '@gitroom/nestjs-libraries/integrations/integration.manager';
 import { emailQueues } from '@gitroom/nestjs-libraries/temporal/email.queues';
 
+export const getTemporalConnectionOptions = () => {
+  const namespace = process.env.TEMPORAL_NAMESPACE || 'default';
+  return {
+    address: process.env.TEMPORAL_ADDRESS || 'localhost:7233',
+    ...(process.env.TEMPORAL_TLS === 'true' ? { tls: true } : {}),
+    ...(process.env.TEMPORAL_API_KEY
+      ? {
+          apiKey: process.env.TEMPORAL_API_KEY,
+          // Cloud authenticates connection setup before a Client supplies its namespace.
+          metadata: { 'temporal-namespace': namespace },
+        }
+      : {}),
+    namespace,
+  };
+};
+
 export const getTemporalModule = (
   isWorkers: boolean,
   path?: string,
@@ -26,14 +42,7 @@ export const getTemporalModule = (
 
   return TemporalModule.register({
     isGlobal: true,
-    connection: {
-      address: process.env.TEMPORAL_ADDRESS || 'localhost:7233',
-      ...(process.env.TEMPORAL_TLS === 'true' ? { tls: true } : {}),
-      ...(process.env.TEMPORAL_API_KEY
-        ? { apiKey: process.env.TEMPORAL_API_KEY }
-        : {}),
-      namespace: process.env.TEMPORAL_NAMESPACE || 'default',
-    },
+    connection: getTemporalConnectionOptions(),
     taskQueue: 'main',
     logLevel: 'error',
     ...(isWorkers

@@ -6,14 +6,17 @@ Checked 2026-11-19. No paid service, license, advertising campaign, or developer
 
 | Dependency | Current public pricing reference | Cost driver | Activation state |
 | --- | --- | --- | --- |
-| Supabase | [Pricing](https://supabase.com/pricing): Pro starts at $25/month; the first project is included and additional projects start at $10/month | Project compute, database disk, Auth usage, private storage, egress, backups, and a separate staging project | Not activated |
-| Vercel | [Pricing](https://vercel.com/pricing): Pro is listed at $20/month before metered usage and account-specific billing details | Deployment plan, team access, functions, network usage, builds, logs, and preview/staging needs | Not activated |
-| Supporting Linux host | Provider not selected; obtain the selected host's published price/quote for the approved 4-vCPU/8-GB starting specification | Compute, persistent disk for Temporal, Redis, backup storage, network transfer, and monitoring | Not provisioned |
-| Redis and Temporal | Self-hosted services in the supporting-host deployment; no hosted-service subscription assumed | Their resource use is part of host sizing, persistence, and operations | Not activated |
+| Supabase | [Pricing](https://supabase.com/pricing): Pro starts at $25/month; the first project is included and additional projects start at $10/month | Project compute, database disk, Auth usage, private storage, egress, backups, and a separate staging project | Existing Free project configured; no upgrade |
+| Vercel | [Pricing](https://vercel.com/pricing): existing Pro team reused; no new subscription or deploying seat for Mireva | Shared credit, API/function compute, daemon memory/CPU, network usage, builds, and preview/staging needs | Project configured; builds held and worker at zero |
+| Redis | [Upstash pricing](https://upstash.com/pricing/redis): dedicated Free plan selected | Free quotas; approval required before any paid plan or automatic upgrade | Mireva production resource ready; paid upgrades disabled |
+| Temporal Cloud | [Pricing](https://temporal.io/pricing): current direct trial includes $150 credits for 90 days; later usage/support/storage charges apply | Workflow actions and retained history; verify the account's actual purchasing arrangement | Namespace and scoped key configured under the owner's trial; workers paused |
+| Supporting Linux host | Alternative Compose deployment only; no separate host selected for the current Vercel architecture | Compute, persistent storage, backups, network transfer, and monitoring if that alternative is later selected | Not provisioned |
 | Transactional email/SMTP | [Resend pricing](https://resend.com/pricing), or the agency's configured SMTP contract | Invitations, password recovery, publishing notifications, and report email volume | Not activated |
-| Domain and backups | Use the selected registrar and backup destination's current price | Domain renewal, DNS choices, retained backup size, restore testing, and off-host copies | Not selected |
+| Domain and backups | `mireva.live` selected; use its registrar and the chosen backup destination's current price | Domain renewal, DNS choices, retained backup size, restore testing, and off-host copies | Production routing/off-host backup destination pending |
 
 The Supabase and Vercel headline amounts are not a complete platform estimate. Do not label their sum as the monthly operating cost: staging, server resources, media egress, email, and licensed/API capabilities are additional variables.
+
+An existing Pro subscription does not make an always-on worker free. A 2 GiB worker uses 1,440 GiB-hours in a 30-day month; the current Mireva `sfo1` review estimates $42.34 for memory alone, plus active CPU and other services, before available shared credits and taxes. Verify the regional rates before activation. Keep account-specific invoices and consumption in private operator records. Do not change the shared team's budget or add-ons to enforce a Mireva limit, because those controls may affect the owner's other projects.
 
 ## Licensed and metered capabilities
 

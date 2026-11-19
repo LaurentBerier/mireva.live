@@ -1,6 +1,7 @@
 import { Controller, Get, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { Connection } from '@temporalio/client';
+import { getTemporalConnectionOptions } from '@gitroom/nestjs-libraries/temporal/temporal.module';
 
 @Controller('health')
 export class HealthController {
@@ -8,16 +9,8 @@ export class HealthController {
   async getHealthStatus(@Res() res: Response) {
     let connection: Connection | undefined;
     try {
-      const address = process.env.TEMPORAL_ADDRESS || 'localhost:7233';
-      connection = await Connection.connect({
-        address,
-        ...(process.env.TEMPORAL_TLS === 'true' ? { tls: true } : {}),
-        ...(process.env.TEMPORAL_API_KEY
-          ? { apiKey: process.env.TEMPORAL_API_KEY }
-          : {}),
-      });
-
-      const namespace = process.env.TEMPORAL_NAMESPACE || 'default';
+      const { namespace, ...connectionOptions } = getTemporalConnectionOptions();
+      connection = await Connection.connect(connectionOptions);
       await Promise.race([
         connection.workflowService.describeNamespace({ namespace }),
         new Promise((_, reject) =>

@@ -9,7 +9,7 @@ The original Postiz interface, providers, REST API, extension, CLI and MCP are r
 Use Node **22.23.4**, pnpm **10.6.1** and Docker Desktop. Commands run at the repository root. If a different pnpm is installed, use `pnpm dlx pnpm@10.6.1` in place of `pnpm`; do not regenerate the lockfile with pnpm 11.
 
 1. `pnpm install --frozen-lockfile`
-2. Copy `.env.agency.example` to `.env`. Set unique `JWT_SECRET`, `ENCRYPTION_KEY` (64 hexadecimal characters), and `AGENCY_OWNER_EMAIL`.
+2. Copy `.env.agency.example` to `.env`. Set unique `JWT_SECRET`, `ENCRYPTION_KEY` (32 random bytes encoded as base64), and `AGENCY_OWNER_EMAIL`.
 3. `pnpm agency:infra:start`
 4. `pnpm agency:local:env` fills the local Supabase endpoint, publishable/service keys and S3 credentials without logging their values.
 5. `pnpm agency:db:deploy`
@@ -48,7 +48,7 @@ The HTTP scheduling check also requires the orchestrator from `pnpm agency:dev`;
 
 ## Deployment and remaining delivery
 
-Mireva targets [mireva.live](https://mireva.live), the Vercel project `mireva`, and Supabase project `ggvmlijdzhmeqkgsgepc`. See [Mireva deployment settings](mireva-deployment.md), [runbook.md](runbook.md), [provider-setup.md](provider-setup.md) and [costs.md](costs.md). The supporting host, backend DNS, deployment credentials, staging environment, SMTP and developer applications remain deployment inputs. The supplied projects have not been deployed or migrated by this checkout.
+Mireva targets [mireva.live](https://mireva.live), the existing Sandscape Pro team's Vercel project [`mireva-live`](https://vercel.com/sanscape-breakingwalls/mireva-live), and Supabase project `ggvmlijdzhmeqkgsgepc`. The selected hosting path is [Vercel Services/Daemons with managed Temporal and Redis](vercel.md). See [Mireva settings](mireva-deployment.md), [runbook.md](runbook.md), [provider-setup.md](provider-setup.md) and [costs.md](costs.md). Hosted Auth, all six private-schema migrations and private storage/S3 credentials are configured. The Mireva Temporal namespace, scoped API key and dedicated Upstash Free Redis connection passed TLS checks. Vercel builds and workers remain held pending a usage budget; staging, SMTP and developer applications remain release inputs. No production deployment is ready and no owner invitation has run.
 
 Remaining product work includes evergreen category queues, a dedicated reusable-post library, richer audience/format and hashtag discovery, more competitor collectors, unified campaign attribution, broader inbox surfaces and notes, richer dashboard/report layouts, complete advertising creative/targeting flows and external editor/media onboarding. All inherited providers remain in scope and visibly unverified until their approved connection/publishing/analytics/messaging workflows pass live tests.
 

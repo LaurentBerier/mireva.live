@@ -1,0 +1,64 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "web": {
+      "root": "apps/frontend",
+      "framework": "nextjs",
+      "installCommand": "cd ../.. && corepack pnpm install --frozen-lockfile",
+      "buildCommand": "cd ../.. && NODE_OPTIONS=--max-old-space-size=6144 corepack pnpm --filter postiz-frontend build",
+      "outputDirectory": ".next",
+      "bindings": [
+        { "type": "service", "service": "api", "format": "url", "env": "BACKEND_INTERNAL_URL" }
+      ]
+    },
+    "api": {
+      "root": ".",
+      "runtime": "container",
+      "entrypoint": "deploy/Dockerfile.vercel",
+      "command": ["node", "scripts/agency-run-vercel.cjs", "backend"],
+      "routes": [
+        {
+          "src": "/api/backend/(.*)",
+          "transforms": [{ "type": "request.path", "op": "set", "args": "/$1" }]
+        },
+        {
+          "src": "/api/backend",
+          "transforms": [{ "type": "request.path", "op": "set", "args": "/" }]
+        }
+      ]
+    }
+  },
+  "rewrites": [
+    { "source": "/api/backend/:path*", "destination": { "service": "api" } },
+    { "source": "/mcp/:path*", "destination": { "service": "api" } },
+    { "source": "/sse/:path*", "destination": { "service": "api" } },
+    { "source": "/message/:path*", "destination": { "service": "api" } },
+    { "source": "/mcp-oauth", "destination": { "service": "api" } },
+    { "source": "/mcp-oauth-chatgpt", "destination": { "service": "api" } },
+    { "source": "/mcp-oauth-claude", "destination": { "service": "api" } },
+    { "source": "/mcp-oauth-dynamic", "destination": { "service": "api" } },
+    { "source": "/.well-known/oauth-protected-resource/:path*", "destination": { "service": "api" } },
+    { "source": "/.well-known/oauth-authorization-server/:path*", "destination": { "service": "api" } },
+    { "source": "/.well-known/openid-configuration/:path*", "destination": { "service": "api" } },
+    { "source": "/.well-known/openai-apps-challenge", "destination": { "service": "api" } },
+    { "source": "/.well-known/muse-challenge/:path*", "destination": { "service": "api" } },
+    { "source": "/:path*", "destination": { "service": "web" } }
+  ],
+  "daemons": {
+    "publisher": {
+      "root": ".",
+      "entrypoint": "deploy/Dockerfile.vercel",
+      "command": ["node", "scripts/agency-run-vercel.cjs", "orchestrator"],
+      "instances": { "sfo1": 0 },
+      "resources": { "requests": { "memory": "2Gi" } },
+      "terminationGracePeriodSeconds": 60,
+      "livenessProbe": {
+        "httpGet": { "port": 3002, "path": "/health/status" },
+        "initialDelaySeconds": 180,
+        "periodSeconds": 30,
+        "timeoutSeconds": 10,
+        "failureThreshold": 5
+      }
+    }
+  }
+}
