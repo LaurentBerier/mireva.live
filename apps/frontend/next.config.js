@@ -47,13 +47,17 @@ const nextConfig = {
     ];
   },
   async rewrites() {
+    const services = process.env.VERCEL_SERVICES === 'true';
     const backend = process.env.VERCEL_ENV === 'preview'
       ? process.env.STAGING_BACKEND_INTERNAL_URL : process.env.BACKEND_INTERNAL_URL;
-    if (process.env.AUTH_PROVIDER === 'supabase' && process.env.VERCEL_ENV === 'preview' && !backend) {
+    if (services && process.env.VERCEL_ENV === 'preview' && process.env.DEPLOYMENT_ENVIRONMENT !== 'staging') {
+      throw new Error('Vercel Services previews require an isolated staging environment');
+    }
+    if (process.env.AUTH_PROVIDER === 'supabase' && process.env.VERCEL_ENV === 'preview' && !services && !backend) {
       throw new Error('Configure an isolated staging backend before creating preview deployments');
     }
     return [
-      ...(process.env.AUTH_PROVIDER === 'supabase' && backend
+      ...(process.env.AUTH_PROVIDER === 'supabase' && !services && backend
         ? [{ source: '/api/backend/:path*', destination: `${backend}/:path*` }]
         : []),
       {

@@ -48,7 +48,7 @@ The HTTP scheduling check also requires the orchestrator from `pnpm agency:dev`;
 
 ## Deployment and remaining delivery
 
-Mireva targets [mireva.live](https://mireva.live), the Vercel project `mireva`, and Supabase project `ggvmlijdzhmeqkgsgepc`. See [Mireva deployment settings](mireva-deployment.md), [runbook.md](runbook.md), [provider-setup.md](provider-setup.md) and [costs.md](costs.md). The supporting host, backend DNS, deployment credentials, staging environment, SMTP and developer applications remain deployment inputs. The supplied projects have not been deployed or migrated by this checkout.
+Mireva targets [mireva.live](https://mireva.live), the Vercel project `mireva`, and Supabase project `ggvmlijdzhmeqkgsgepc`. The selected hosting path is [Vercel Services/Daemons with managed Temporal and Redis](vercel.md). See [Mireva settings](mireva-deployment.md), [runbook.md](runbook.md), [provider-setup.md](provider-setup.md) and [costs.md](costs.md). Managed-service/storage credentials, staging, SMTP and developer applications remain deployment inputs. Hosted Auth and all six private-schema migrations are configured. No app deployment or owner invitation has run.
 
 Remaining product work includes evergreen category queues, a dedicated reusable-post library, richer audience/format and hashtag discovery, more competitor collectors, unified campaign attribution, broader inbox surfaces and notes, richer dashboard/report layouts, complete advertising creative/targeting flows and external editor/media onboarding. All inherited providers remain in scope and visibly unverified until their approved connection/publishing/analytics/messaging workflows pass live tests.
 
