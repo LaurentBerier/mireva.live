@@ -34,7 +34,7 @@ Set `PORT=3000` in Mireva's project environment so Vercel container ingress matc
 
 The Vercel entrypoint rejects missing managed dependencies and plaintext connections before NestJS starts. Preview APIs additionally require an isolated staging configuration and all job/write flags false. Preview workers are prohibited. Keep previews disabled until separate staging Supabase, Redis and Temporal credentials are supplied.
 
-The final Linux image passed API startup, Supabase identity verification and matching source download under 1.25 CPU / 1536 MiB limits, using about 647 MiB while idle. It also completed a read-only Prisma query against Mireva's hosted pooler with strict certificate validation after database `CREATE` was revoked. These checks verify startup and connectivity; they do not certify production capacity or managed Temporal/Redis access.
+The final Linux image passed API startup, Supabase identity verification and matching source download under 1.25 CPU / 1536 MiB limits, using about 647 MiB while idle. Prisma and Node/Postgres both connected to Mireva's hosted pooler with certificate validation after database `CREATE` was revoked. Signed private-object delivery and rejection of public/unauthenticated reads were verified; the temporary QA object was removed. An application-schema export restored into an isolated PostgreSQL 17 container with all 111 tables and six migrations. These checks do not certify production capacity, full disaster recovery or managed Temporal/Redis access.
 
 ## Costs and capacity
 
