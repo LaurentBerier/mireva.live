@@ -3,12 +3,16 @@ import { resolve } from 'node:path';
 import { runInNewContext } from 'node:vm';
 import Redis from 'ioredis';
 import { backendInternalUrl } from '@gitroom/helpers/utils/backend.internal.url';
+import { getTemporalConnectionOptions } from '@gitroom/nestjs-libraries/temporal/temporal.module';
+import { EncryptionService } from '@gitroom/nestjs-libraries/services/encryption.service';
+
+jest.mock('@gitroom/nestjs-libraries/integrations/integration.manager', () => ({ socialIntegrationList: [] }));
 
 const entrypoint = readFileSync(resolve('scripts/agency-run-vercel.cjs'), 'utf8');
 const fixture = {
   AUTH_PROVIDER: 'supabase', DATABASE_URL: 'postgresql://test:private-fixture@localhost/test',
   SUPABASE_URL: 'https://fixture.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'private-fixture',
-  JWT_SECRET: 'private-fixture', ENCRYPTION_KEY: '01'.repeat(32), ENCRYPTION_PROVIDER: 'local',
+  JWT_SECRET: 'private-fixture', ENCRYPTION_KEY: Buffer.alloc(32, 1).toString('base64'), ENCRYPTION_PROVIDER: 'local',
   STORAGE_PROVIDER: 'supabase', SUPABASE_STORAGE_BUCKET: 'fixture-media', SUPABASE_STORAGE_REGION: 'us-west-2',
   SUPABASE_S3_ACCESS_KEY_ID: 'private-fixture', SUPABASE_S3_SECRET_ACCESS_KEY: 'private-fixture', PORT: '3000',
   REDIS_URL: 'rediss://test:private-fixture@redis.example.test:6379',
@@ -20,11 +24,45 @@ const fixture = {
 function launch(env: Record<string, string> = {}, service = 'backend') {
   const load = jest.fn();
   const environment = { ...fixture, ...env };
-  runInNewContext(entrypoint, { process: { argv: ['node', 'entry', service], env: environment }, URL, require: load });
+  runInNewContext(entrypoint, { process: { argv: ['node', 'entry', service], env: environment }, URL, Buffer, require: load });
   return Object.assign(load, { environment });
 }
 
 describe('Vercel deployment boundaries', () => {
+  it('accepts a key that initializes the real local encryption provider and round-trips credentials', async () => {
+    const before = { ...process.env };
+    try {
+      process.env.ENCRYPTION_PROVIDER = 'local';
+      process.env.ENCRYPTION_KEY = fixture.ENCRYPTION_KEY;
+      delete process.env.ENCRYPTION_READ_ONLY;
+      expect(launch()).toHaveBeenCalledTimes(1);
+      const encryption = new EncryptionService();
+      await encryption.onModuleInit();
+      const encrypted = await encryption.encrypt('private-fixture-token');
+      expect(encrypted).toMatch(/^enc:v1:/);
+      await expect(encryption.decrypt(encrypted)).resolves.toBe('private-fixture-token');
+    } finally { process.env = before; }
+  });
+
+  it('routes managed Temporal authentication to the selected namespace and preserves local connections', () => {
+    const before = { ...process.env };
+    try {
+      process.env.TEMPORAL_ADDRESS = 'fixture.tmprl.cloud:7233';
+      process.env.TEMPORAL_NAMESPACE = 'fixture-production.test';
+      process.env.TEMPORAL_TLS = 'true';
+      process.env.TEMPORAL_API_KEY = 'private-fixture';
+      expect(getTemporalConnectionOptions()).toEqual({
+        address: 'fixture.tmprl.cloud:7233', namespace: 'fixture-production.test',
+        tls: true, apiKey: 'private-fixture', metadata: { 'temporal-namespace': 'fixture-production.test' },
+      });
+      delete process.env.TEMPORAL_ADDRESS;
+      delete process.env.TEMPORAL_NAMESPACE;
+      delete process.env.TEMPORAL_TLS;
+      delete process.env.TEMPORAL_API_KEY;
+      expect(getTemporalConnectionOptions()).toEqual({ address: 'localhost:7233', namespace: 'default' });
+    } finally { process.env = before; }
+  });
+
   it('requires real managed dependencies before loading the backend', () => {
     expect(() => launch({ REDIS_URL: '', TEMPORAL_API_KEY: '' })).toThrow(/REDIS_URL, TEMPORAL_API_KEY/);
     expect(launch()).toHaveBeenCalledWith('./agency-run-service.cjs');
@@ -81,7 +119,8 @@ describe('Vercel deployment boundaries', () => {
   it('rejects ephemeral storage and unencrypted social-credential storage', () => {
     expect(() => launch({ STORAGE_PROVIDER: '' })).toThrow('private Supabase storage');
     expect(() => launch({ ENCRYPTION_PROVIDER: '' })).toThrow('local encryption');
-    expect(() => launch({ ENCRYPTION_KEY: 'invalid' })).toThrow('hexadecimal key');
+    expect(() => launch({ ENCRYPTION_KEY: 'invalid' })).toThrow('base64-encoded 32-byte key');
+    expect(() => launch({ ENCRYPTION_KEY: '01'.repeat(32) })).toThrow('base64-encoded 32-byte key');
     expect(() => launch({ ENCRYPTION_READ_ONLY: 'true' })).toThrow('writes enabled');
     expect(() => launch({ SUPABASE_S3_SECRET_ACCESS_KEY: '' })).toThrow('SUPABASE_S3_SECRET_ACCESS_KEY');
     expect(() => launch({ PORT: '' })).toThrow('PORT');

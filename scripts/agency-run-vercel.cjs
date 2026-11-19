@@ -23,8 +23,9 @@ if (missing.length) throw new Error(`Vercel backend configuration is incomplete:
 if (process.env.TEMPORAL_TLS !== 'true') throw new Error('Managed Temporal requires TEMPORAL_TLS=true');
 if (process.env.AUTH_PROVIDER !== 'supabase') throw new Error('Vercel agency deployments require Supabase Auth');
 if (process.env.STORAGE_PROVIDER !== 'supabase') throw new Error('Vercel agency deployments require private Supabase storage');
-if (process.env.ENCRYPTION_PROVIDER !== 'local' || !/^[a-f\d]{64}$/i.test(process.env.ENCRYPTION_KEY) || process.env.ENCRYPTION_READ_ONLY === 'true') {
-  throw new Error('Vercel agency deployments require local encryption with a 64-character hexadecimal key and writes enabled');
+const encryptionKey = Buffer.from(process.env.ENCRYPTION_KEY, 'base64');
+if (process.env.ENCRYPTION_PROVIDER !== 'local' || encryptionKey.length !== 32 || encryptionKey.toString('base64') !== process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_READ_ONLY === 'true') {
+  throw new Error('Vercel agency deployments require local encryption with a base64-encoded 32-byte key and writes enabled');
 }
 
 if (process.env.VERCEL_ENV === 'preview') {
